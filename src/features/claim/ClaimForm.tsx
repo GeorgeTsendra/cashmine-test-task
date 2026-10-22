@@ -6,14 +6,14 @@ import { AmountRow } from '@/components/AmountRow';
 import { Button } from '@/components/Button';
 import { QueryState } from '@/components/QueryState';
 import { describeError } from '@/lib/errors';
-import { formatAmountString, formatDecimal, isPositive, parseDecimal, validateClaimAmount } from '@/lib/money';
+import { AmountError, formatAmountString, formatDecimal, isPositive, parseDecimal, validateClaimAmount } from '@/lib/money';
 import { newIdempotencyKey } from '@/lib/uuid';
 import { colors, fontSize, radius, spacing } from '@/theme';
 import type { BalanceItem, ClaimAttempt, ClaimOptions } from '@/types';
 
 import { AmountField } from './AmountField';
 import { ChoicePicker } from './ChoicePicker';
-import { ConfirmModal, type ConfirmPhase } from './ConfirmModal';
+import { ConfirmModal, ConfirmPhase } from './ConfirmModal';
 import { describeAmountError } from './messages';
 import { mayBeInFlight, useSubmitClaim } from './useSubmitClaim';
 
@@ -44,16 +44,16 @@ function ClaimFormBody({ item, options }: { item: BalanceItem; options: ClaimOpt
   const rules = { decimals: item.decimals, minAmount: options.minAmount, available: item.available, fee: options.fee };
   const result = validateClaimAmount(amount, rules);
   const destination = options.destinations.find((d) => d.id === destinationId);
-  const error = result.ok || result.error === 'EMPTY' ? null : describeAmountError(result.error, { asset, ...rules });
+  const error = result.ok || result.error === AmountError.Empty ? null : describeAmountError(result.error, { asset, ...rules });
   const unit = (value: string) => `${formatAmountString(value)} ${asset}`;
 
   const phase: ConfirmPhase = submit.isPending
-    ? 'submitting'
+    ? ConfirmPhase.Submitting
     : submit.isError
       ? mayBeInFlight(submit.error)
-        ? 'unknown'
-        : 'rejected'
-      : 'confirm';
+        ? ConfirmPhase.Unknown
+        : ConfirmPhase.Rejected
+      : ConfirmPhase.Confirm;
 
   function confirm() {
     if (!result.ok || destination === undefined) return;

@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AmountRow } from '@/components/AmountRow';
-import { Button } from '@/components/Button';
+import { Button, ButtonVariant } from '@/components/Button';
 import { balanceTotalsUsd, formatAmountString, formatUsd, isPositive } from '@/lib/money';
 import { colors, fontSize, radius, spacing } from '@/theme';
 import type { BalanceItem } from '@/types';
@@ -27,7 +27,7 @@ export function BalanceCard({ item }: { item: BalanceItem }) {
         <Button
           label="Claim"
           accessibilityLabel={`Claim ${item.asset}`}
-          variant="secondary"
+          variant={ButtonVariant.Secondary}
           disabled={!isPositive(item.available)}
           onPress={() => router.push({ pathname: '/claim', params: { asset: item.asset } })}
         />

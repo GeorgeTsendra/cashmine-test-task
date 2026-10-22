@@ -1,4 +1,4 @@
-import { formatAmountString, type ClaimAmountError } from '@/lib/money';
+import { AmountError, formatAmountString } from '@/lib/money';
 
 interface AmountErrorContext {
   asset: string;
@@ -8,21 +8,21 @@ interface AmountErrorContext {
 }
 
 /** User-facing text for an amount that failed validation. */
-export function describeAmountError(error: ClaimAmountError, ctx: AmountErrorContext): string {
+export function describeAmountError(error: AmountError, ctx: AmountErrorContext): string {
   switch (error) {
-    case 'EMPTY':
+    case AmountError.Empty:
       return 'Enter an amount.';
-    case 'FORMAT':
+    case AmountError.Format:
       return 'Use digits and a dot, for example 0.5. No commas, signs or leading zeros.';
-    case 'TOO_MANY_DECIMALS':
+    case AmountError.TooManyDecimals:
       return `${ctx.asset} allows at most ${ctx.decimals} decimal places.`;
-    case 'BELOW_MIN':
+    case AmountError.BelowMin:
       return `The minimum is ${formatAmountString(ctx.minAmount)} ${ctx.asset}.`;
-    case 'ABOVE_AVAILABLE':
+    case AmountError.AboveAvailable:
       return `You can claim at most ${formatAmountString(ctx.available)} ${ctx.asset}.`;
-    case 'RECEIVE_NOT_POSITIVE':
+    case AmountError.ReceiveNotPositive:
       return 'The amount must be larger than the fee.';
-    case 'RULES_UNAVAILABLE':
+    case AmountError.RulesUnavailable:
       return "Can't read the claim limits right now. Try again.";
   }
 }

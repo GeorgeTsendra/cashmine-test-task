@@ -4,12 +4,15 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { setUnauthorizedHandler } from '@/lib/queryClient';
 import { readToken, removeClaimAttempt, removeToken, saveToken as persistToken } from '@/lib/storage';
 
-type AuthStatus = 'loading' | 'ready';
+export enum AuthStatus {
+  Loading = 'loading',
+  Ready = 'ready',
+}
 
 const UNAUTHORIZED_NOTICE = 'Your token was rejected or has expired. Enter a new one to continue.';
 
 interface TokenContextValue {
-  /** "loading" until the stored token has been read. */
+  /** Loading until the stored token has been read. */
   status: AuthStatus;
   token: string | null;
   /** Why the user is back on the token screen, e.g. after the API rejected the token. */
@@ -22,7 +25,7 @@ const TokenContext = createContext<TokenContextValue | null>(null);
 
 export function TokenProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
-  const [status, setStatus] = useState<AuthStatus>('loading');
+  const [status, setStatus] = useState<AuthStatus>(AuthStatus.Loading);
   const [token, setToken] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -31,7 +34,7 @@ export function TokenProvider({ children }: { children: ReactNode }) {
     readToken().then((stored) => {
       if (!active) return;
       setToken(stored);
-      setStatus('ready');
+      setStatus(AuthStatus.Ready);
     });
     return () => {
       active = false;

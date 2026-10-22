@@ -1,7 +1,7 @@
 import { useIsMutating } from '@tanstack/react-query';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Button } from '@/components/Button';
+import { Button, ButtonVariant } from '@/components/Button';
 import { describeError } from '@/lib/errors';
 import { formatAmountString } from '@/lib/money';
 import { colors, fontSize, radius, spacing } from '@/theme';
@@ -27,7 +27,7 @@ export function PendingAttemptBanner() {
       {submit.isError && !mayBeInFlight(submit.error) && <Text style={styles.text}>{describeError(submit.error)}</Text>}
       <Button
         label={submit.isPending ? 'Checking…' : 'Check status'}
-        variant="secondary"
+        variant={ButtonVariant.Secondary}
         disabled={submit.isPending}
         onPress={() => submit.mutate(attempt)}
       />

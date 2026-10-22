@@ -738,3 +738,23 @@ Response:
 Files changed: `src/app/claims/[id].tsx`, `src/app/_layout.tsx`, `src/app/index.tsx`, `src/features/claim/` (ClaimForm, ClaimView, ConfirmModal, ClaimStatusView, PendingAttemptBanner, useClaim, useSubmitClaim, keys), `src/features/auth/TokenProvider.tsx`, `src/lib/storage.ts`, `src/lib/uuid.ts`, `src/lib/uuid.test.ts`, `src/types.ts`, `src/theme.ts`, `ai-logs/session-log.md`
 
 Suggested commit: `feat: submit claims with idempotent replay and track their status`
+
+## 22:35 — Enums instead of string unions
+
+Prompt:
+
+```text
+use enum instead of consts and types 
+expl: "type AuthStatus = 'loading' | 'ready';"
+```
+
+Response:
+
+- Converted every string-literal union type and the `as const` error-code list to string enums, and updated every comparison, `switch` and prop: `AuthStatus`, `ClaimStatus`, `AccrualStatus`, `ReversalStatus`, `ActivityType`, `ApiErrorCode` (replacing `API_ERROR_CODES`), `ApiErrorKind`, an internal `HttpMethod`, `ConfirmPhase`, `ButtonVariant`, and one `AmountError` enum for both parsing and claim validation (it replaces `ParseAmountError` and `ClaimAmountError`). The values are unchanged, so the wire format and storage are the same.
+- Left alone on purpose: the theme tokens (`colors`, `spacing`, `fontSize`, `radius`), which are style values and not a closed set of names, and the React Query key factories, which are tuples. Say if you want those changed too.
+- A side effect to know: with enums, TypeScript no longer accepts a plain string like `'pending'` where a status is expected, so the compiler now catches a typo or an unknown status. The API responses are still cast, not validated, so an unexpected status from the server is not caught at runtime.
+- `npx tsc --noEmit` exits 0 and `npm test` shows 75 passed. I booted the app in the browser: a stored fake token went to the real API, got a 401, and the app signed out with the notice and cleared storage, with no JS errors, which runs the new error-code enum. I did not re-run the claim flows with the mock API after this change; the type check covers them. I ran no git commands.
+
+Files changed: `src/types.ts`, `src/lib/api.ts`, `src/lib/errors.ts`, `src/lib/queryClient.ts`, `src/lib/money.ts`, `src/lib/money.test.ts`, `src/components/Button.tsx`, `src/components/QueryState.tsx`, `src/app/_layout.tsx`, `src/app/index.tsx`, `src/app/claim.tsx`, `src/features/auth/TokenProvider.tsx`, `src/features/balances/` (BalanceCard, Freshness), `src/features/claim/` (AmountField, ClaimForm, ClaimStatusView, ConfirmModal, PendingAttemptBanner, messages, useClaim), `ai-logs/session-log.md`
+
+Suggested commit: `refactor: use enums instead of string unions and const lists`

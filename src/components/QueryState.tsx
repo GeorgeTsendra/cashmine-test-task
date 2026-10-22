@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
-import { Button } from '@/components/Button';
+import { Button, ButtonVariant } from '@/components/Button';
 import { describeError } from '@/lib/errors';
 import { colors, fontSize, radius, spacing } from '@/theme';
 
@@ -76,7 +76,7 @@ function ErrorBox({ message, onRetry, retrying }: { message: string; onRetry: ()
       <Text accessibilityRole="alert" style={styles.errorText}>
         {message}
       </Text>
-      <Button label={retrying ? 'Retrying…' : 'Retry'} onPress={onRetry} disabled={retrying} variant="secondary" />
+      <Button label={retrying ? 'Retrying…' : 'Retry'} onPress={onRetry} disabled={retrying} variant={ButtonVariant.Secondary} />
     </View>
   );
 }

@@ -2,6 +2,7 @@ import type { BalanceItem } from '@/types';
 
 import {
   add,
+  AmountError,
   balanceTotalsUsd,
   compare,
   formatAmountString,
@@ -39,12 +40,12 @@ describe('parseAmount', () => {
   it.each(['.5', '1.', '05', '00', '00.5', '1e-3', '-1', '+1', '1,5', '1 000', '1.5.2', 'abc', '0x10', '٣'])(
     'rejects "%s" as FORMAT',
     (input) => {
-      expect(parseAmount(input, 6)).toEqual({ ok: false, error: 'FORMAT' });
+      expect(parseAmount(input, 6)).toEqual({ ok: false, error: AmountError.Format });
     },
   );
 
   it.each(['', '   '])('rejects blank input %j as EMPTY', (input) => {
-    expect(parseAmount(input, 6)).toEqual({ ok: false, error: 'EMPTY' });
+    expect(parseAmount(input, 6)).toEqual({ ok: false, error: AmountError.Empty });
   });
 
   it('ignores surrounding whitespace', () => {
@@ -54,16 +55,16 @@ describe('parseAmount', () => {
 
   it('allows exactly `decimals` decimal places and no more', () => {
     expect(parseAmount('0.123456', 6).ok).toBe(true);
-    expect(parseAmount('0.1234567', 6)).toEqual({ ok: false, error: 'TOO_MANY_DECIMALS' });
+    expect(parseAmount('0.1234567', 6)).toEqual({ ok: false, error: AmountError.TooManyDecimals });
   });
 
   it('counts decimal places as written, so trailing zeros do not help', () => {
-    expect(parseAmount('0.5000000', 6)).toEqual({ ok: false, error: 'TOO_MANY_DECIMALS' });
+    expect(parseAmount('0.5000000', 6)).toEqual({ ok: false, error: AmountError.TooManyDecimals });
   });
 
   it('handles assets without decimals', () => {
     expect(parseAmount('5', 0).ok).toBe(true);
-    expect(parseAmount('5.0', 0)).toEqual({ ok: false, error: 'TOO_MANY_DECIMALS' });
+    expect(parseAmount('5.0', 0)).toEqual({ ok: false, error: AmountError.TooManyDecimals });
   });
 
   it('keeps every digit of an 18-decimal amount beyond Number precision', () => {
@@ -254,38 +255,38 @@ describe('validateClaimAmount', () => {
   });
 
   it('rejects below the minimum and above the available balance', () => {
-    expect(validateClaimAmount('0.009', rules)).toEqual({ ok: false, error: 'BELOW_MIN' });
-    expect(validateClaimAmount('1.5000001', rules)).toEqual({ ok: false, error: 'ABOVE_AVAILABLE' });
+    expect(validateClaimAmount('0.009', rules)).toEqual({ ok: false, error: AmountError.BelowMin });
+    expect(validateClaimAmount('1.5000001', rules)).toEqual({ ok: false, error: AmountError.AboveAvailable });
   });
 
   it('compares numbers, not strings', () => {
-    expect(validateClaimAmount('10', { ...rules, available: '9.5' })).toEqual({ ok: false, error: 'ABOVE_AVAILABLE' });
+    expect(validateClaimAmount('10', { ...rules, available: '9.5' })).toEqual({ ok: false, error: AmountError.AboveAvailable });
     expect(validateClaimAmount('9', { ...rules, minAmount: '10', available: '50' })).toEqual({
       ok: false,
-      error: 'BELOW_MIN',
+      error: AmountError.BelowMin,
     });
   });
 
   it('requires a positive amount after the fee', () => {
     const free = { ...rules, minAmount: '0' };
-    expect(validateClaimAmount('0.0012', free)).toEqual({ ok: false, error: 'RECEIVE_NOT_POSITIVE' });
+    expect(validateClaimAmount('0.0012', free)).toEqual({ ok: false, error: AmountError.ReceiveNotPositive });
     expect(validateClaimAmount('0.0013', free).ok).toBe(true);
-    expect(validateClaimAmount('0', free)).toEqual({ ok: false, error: 'RECEIVE_NOT_POSITIVE' });
+    expect(validateClaimAmount('0', free)).toEqual({ ok: false, error: AmountError.ReceiveNotPositive });
   });
 
   it('passes parsing errors through', () => {
-    expect(validateClaimAmount('', rules)).toEqual({ ok: false, error: 'EMPTY' });
-    expect(validateClaimAmount('0,5', rules)).toEqual({ ok: false, error: 'FORMAT' });
+    expect(validateClaimAmount('', rules)).toEqual({ ok: false, error: AmountError.Empty });
+    expect(validateClaimAmount('0,5', rules)).toEqual({ ok: false, error: AmountError.Format });
     expect(validateClaimAmount('0.1234567', { ...rules, decimals: 6 })).toEqual({
       ok: false,
-      error: 'TOO_MANY_DECIMALS',
+      error: AmountError.TooManyDecimals,
     });
   });
 
   it('refuses to validate against malformed rules', () => {
     expect(validateClaimAmount('0.5', { ...rules, available: 'abc' })).toEqual({
       ok: false,
-      error: 'RULES_UNAVAILABLE',
+      error: AmountError.RulesUnavailable,
     });
   });
 });

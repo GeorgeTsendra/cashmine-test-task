@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { Button } from '@/components/Button';
+import { Button, ButtonVariant } from '@/components/Button';
 import { colors, fontSize, MIN_TAP, radius, spacing } from '@/theme';
 
 interface AmountFieldProps {
@@ -30,7 +30,7 @@ export function AmountField({ asset, value, onChangeText, onMax, maxDisabled, er
           value={value}
         />
         <Text style={styles.unit}>{asset}</Text>
-        <Button label="Max" variant="link" disabled={maxDisabled} onPress={onMax} accessibilityLabel={`Use the maximum ${asset} amount`} />
+        <Button label="Max" variant={ButtonVariant.Link} disabled={maxDisabled} onPress={onMax} accessibilityLabel={`Use the maximum ${asset} amount`} />
       </View>
       {error !== null && (
         <Text accessibilityRole="alert" style={styles.error}>

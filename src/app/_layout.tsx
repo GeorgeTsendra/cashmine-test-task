@@ -2,14 +2,14 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
-import { TokenProvider, useToken } from '@/features/auth/TokenProvider';
+import { AuthStatus, TokenProvider, useToken } from '@/features/auth/TokenProvider';
 import { queryClient } from '@/lib/queryClient';
 import { colors } from '@/theme';
 
 function RootStack() {
   const { status, token } = useToken();
 
-  if (status === 'loading') {
+  if (status === AuthStatus.Loading) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator accessibilityLabel="Loading" color={colors.primary} />

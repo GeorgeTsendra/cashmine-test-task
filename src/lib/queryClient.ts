@@ -1,6 +1,6 @@
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
 
-import { isApiError } from '@/lib/api';
+import { ApiErrorKind, isApiError } from '@/lib/api';
 
 const MAX_RETRIES = 2;
 
@@ -8,7 +8,7 @@ const MAX_RETRIES = 2;
 // never what the user has to fix (400, 401, 404, 409).
 function shouldRetry(failureCount: number, error: Error): boolean {
   if (failureCount >= MAX_RETRIES || !isApiError(error)) return false;
-  if (error.kind !== 'http') return true;
+  if (error.kind !== ApiErrorKind.Http) return true;
   return error.status === 429 || (error.status !== null && error.status >= 500);
 }
 

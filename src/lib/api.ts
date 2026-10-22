@@ -2,11 +2,10 @@
 // Every /v1 request sends `Authorization: Bearer <token>`. The caller passes the
 // token in; this module never stores or logs it.
 
-import { API_ERROR_CODES } from '@/types';
+import { ApiErrorCode } from '@/types';
 import type {
   ActivityQuery,
   ActivityResponse,
-  ApiErrorCode,
   BalancesResponse,
   Claim,
   ClaimOptions,
@@ -25,7 +24,17 @@ export interface RequestOptions {
   signal?: AbortSignal;
 }
 
-export type ApiErrorKind = 'http' | 'network' | 'timeout' | 'parse';
+export enum ApiErrorKind {
+  Http = 'http',
+  Network = 'network',
+  Timeout = 'timeout',
+  Parse = 'parse',
+}
+
+enum HttpMethod {
+  Get = 'GET',
+  Post = 'POST',
+}
 
 interface ApiErrorInit {
   kind: ApiErrorKind;
@@ -57,11 +66,11 @@ export class ApiError extends Error {
   /** True when the server may have processed the request although we got no usable answer. */
   get outcomeUnknown(): boolean {
     switch (this.kind) {
-      case 'network':
-      case 'timeout':
-      case 'parse':
+      case ApiErrorKind.Network:
+      case ApiErrorKind.Timeout:
+      case ApiErrorKind.Parse:
         return true;
-      case 'http':
+      case ApiErrorKind.Http:
         // The docs say 504 means the outcome is unknown.
         return this.status === 500 || this.status === 503 || this.status === 504; // TODO: verify that 500/503 can also leave a claim created
     }
@@ -77,7 +86,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isApiErrorCode(value: unknown): value is ApiErrorCode {
-  return typeof value === 'string' && (API_ERROR_CODES as readonly string[]).includes(value);
+  return typeof value === 'string' && (Object.values(ApiErrorCode) as string[]).includes(value);
 }
 
 // Error bodies look like { error: { code, message, field?, retryAfterMs? } }, but a proxy in
@@ -90,7 +99,7 @@ function httpError(status: number, headers: Headers, json: unknown): ApiError {
     if (Number.isFinite(seconds)) retryAfterMs = seconds * 1000; // TODO: verify Retry-After is always seconds, never an HTTP date
   }
   return new ApiError({
-    kind: 'http',
+    kind: ApiErrorKind.Http,
     status,
     code: body && isApiErrorCode(body.code) ? body.code : undefined,
     message: body && typeof body.message === 'string' ? body.message : `HTTP ${status}`,
@@ -100,7 +109,7 @@ function httpError(status: number, headers: Headers, json: unknown): ApiError {
 }
 
 interface RequestSpec extends RequestOptions {
-  method: 'GET' | 'POST';
+  method: HttpMethod;
   path: string;
   headers?: Record<string, string>;
   body?: unknown;
@@ -132,9 +141,9 @@ async function send(spec: RequestSpec): Promise<{ response: Response; text: stri
     });
     return { response, text: await response.text() };
   } catch (error) {
-    if (timedOut) throw new ApiError({ kind: 'timeout', message: 'The request timed out' });
+    if (timedOut) throw new ApiError({ kind: ApiErrorKind.Timeout, message: 'The request timed out' });
     if (signal?.aborted) throw error; // cancelled by the caller, not a failure
-    throw new ApiError({ kind: 'network', message: 'Network request failed' });
+    throw new ApiError({ kind: ApiErrorKind.Network, message: 'Network request failed' });
   } finally {
     clearTimeout(timer);
     signal?.removeEventListener('abort', abortFromCaller);
@@ -155,13 +164,13 @@ async function request<T>(spec: RequestSpec): Promise<{ data: T; headers: Header
 
   if (!response.ok) throw httpError(response.status, response.headers, readable ? json : undefined);
   if (!readable || json === undefined) {
-    throw new ApiError({ kind: 'parse', status: response.status, message: 'Unreadable response' });
+    throw new ApiError({ kind: ApiErrorKind.Parse, status: response.status, message: 'Unreadable response' });
   }
   return { data: json as T, headers: response.headers };
 }
 
 export async function getBalances({ token, signal }: RequestOptions): Promise<BalancesResponse> {
-  const { data } = await request<BalancesResponse>({ method: 'GET', path: '/v1/balances', token, signal });
+  const { data } = await request<BalancesResponse>({ method: HttpMethod.Get, path: '/v1/balances', token, signal });
   return data;
 }
 
@@ -173,13 +182,13 @@ export async function getActivity(
   if (limit !== undefined) query.push(`limit=${limit}`);
   if (cursor) query.push(`cursor=${encodeURIComponent(cursor)}`);
   const path = query.length > 0 ? `/v1/activity?${query.join('&')}` : '/v1/activity';
-  const { data } = await request<ActivityResponse>({ method: 'GET', path, token, signal });
+  const { data } = await request<ActivityResponse>({ method: HttpMethod.Get, path, token, signal });
   return data;
 }
 
 export async function getClaimOptions({ token, signal }: RequestOptions, asset: string): Promise<ClaimOptions> {
   const path = `/v1/claim-options?asset=${encodeURIComponent(asset)}`;
-  const { data } = await request<ClaimOptions>({ method: 'GET', path, token, signal });
+  const { data } = await request<ClaimOptions>({ method: HttpMethod.Get, path, token, signal });
   return data;
 }
 
@@ -197,7 +206,7 @@ export async function createClaim(
     throw new Error('Idempotency-Key must be 1 to 100 characters');
   }
   const { data, headers } = await request<Claim>({
-    method: 'POST',
+    method: HttpMethod.Post,
     path: '/v1/claims',
     token,
     signal,
@@ -209,7 +218,7 @@ export async function createClaim(
 
 export async function getClaim({ token, signal }: RequestOptions, id: string): Promise<Claim> {
   const { data } = await request<Claim>({
-    method: 'GET',
+    method: HttpMethod.Get,
     path: `/v1/claims/${encodeURIComponent(id)}`,
     token,
     signal,

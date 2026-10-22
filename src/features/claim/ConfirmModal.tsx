@@ -1,7 +1,7 @@
 import { Modal, StyleSheet, Text, View } from 'react-native';
 
 import { AmountRow } from '@/components/AmountRow';
-import { Button } from '@/components/Button';
+import { Button, ButtonVariant } from '@/components/Button';
 import { colors, fontSize, MAX_CONTENT_WIDTH, radius, spacing } from '@/theme';
 
 /**
@@ -9,7 +9,12 @@ import { colors, fontSize, MAX_CONTENT_WIDTH, radius, spacing } from '@/theme';
  * unknown: no answer, so the claim may or may not exist; checking again replays the same request.
  * rejected: the server said no, so nothing was claimed.
  */
-export type ConfirmPhase = 'confirm' | 'submitting' | 'unknown' | 'rejected';
+export enum ConfirmPhase {
+  Confirm = 'confirm',
+  Submitting = 'submitting',
+  Unknown = 'unknown',
+  Rejected = 'rejected',
+}
 
 interface ConfirmModalProps {
   visible: boolean;
@@ -26,11 +31,11 @@ interface ConfirmModalProps {
 }
 
 const NOTES: Record<ConfirmPhase, string> = {
-  confirm: 'This sends the claim to the destination above and cannot be undone.',
-  submitting: "Sending your claim. Please don't close this page.",
-  unknown:
+  [ConfirmPhase.Confirm]: 'This sends the claim to the destination above and cannot be undone.',
+  [ConfirmPhase.Submitting]: "Sending your claim. Please don't close this page.",
+  [ConfirmPhase.Unknown]:
     "We couldn't confirm whether your claim went through. It may already be in progress. Checking again sends the same request, so it can never create a second claim.",
-  rejected: 'Nothing was claimed.',
+  [ConfirmPhase.Rejected]: 'Nothing was claimed.',
 };
 
 export function ConfirmModal({
@@ -45,7 +50,7 @@ export function ConfirmModal({
   onCancel,
   onConfirm,
 }: ConfirmModalProps) {
-  const busy = phase === 'submitting';
+  const busy = phase === ConfirmPhase.Submitting;
   return (
     <Modal transparent animationType="fade" visible={visible} onRequestClose={busy ? undefined : onCancel}>
       <View style={styles.backdrop}>
@@ -59,23 +64,23 @@ export function ConfirmModal({
             <AmountRow label="You receive" value={`${receive} ${asset}`} strong />
             <AmountRow label="To" value={destination} />
           </View>
-          {phase === 'rejected' && message !== null && (
+          {phase === ConfirmPhase.Rejected && message !== null && (
             <Text accessibilityRole="alert" style={styles.problem}>
               {message}
             </Text>
           )}
-          <Text accessibilityRole={phase === 'unknown' ? 'alert' : undefined} style={phase === 'unknown' ? styles.warning : styles.note}>
+          <Text accessibilityRole={phase === ConfirmPhase.Unknown ? 'alert' : undefined} style={phase === ConfirmPhase.Unknown ? styles.warning : styles.note}>
             {NOTES[phase]}
           </Text>
           <View style={styles.actions}>
-            {phase === 'rejected' ? null : (
+            {phase === ConfirmPhase.Rejected ? null : (
               <Button
-                label={busy ? 'Submitting…' : phase === 'unknown' ? 'Check again' : 'Confirm claim'}
+                label={busy ? 'Submitting…' : phase === ConfirmPhase.Unknown ? 'Check again' : 'Confirm claim'}
                 disabled={busy}
                 onPress={onConfirm}
               />
             )}
-            <Button label={phase === 'confirm' ? 'Cancel' : 'Close'} variant="secondary" disabled={busy} onPress={onCancel} />
+            <Button label={phase === ConfirmPhase.Confirm ? 'Cancel' : 'Close'} variant={ButtonVariant.Secondary} disabled={busy} onPress={onCancel} />
           </View>
         </View>
       </View>

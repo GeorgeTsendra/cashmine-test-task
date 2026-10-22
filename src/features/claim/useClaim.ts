@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { useToken } from '@/features/auth/TokenProvider';
 import { getClaim } from '@/lib/api';
+import { ClaimStatus } from '@/types';
 
 import { claimKeys } from './keys';
 
@@ -15,6 +16,6 @@ export function useClaim(id: string) {
     queryFn: ({ signal }) => getClaim({ token: token ?? '', signal }, id),
     enabled: token !== null,
     staleTime: POLL_MS - 1000,
-    refetchInterval: (query) => (query.state.data?.status === 'pending' ? POLL_MS : false),
+    refetchInterval: (query) => (query.state.data?.status === ClaimStatus.Pending ? POLL_MS : false),
   });
 }

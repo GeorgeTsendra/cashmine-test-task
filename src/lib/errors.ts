@@ -1,16 +1,16 @@
-import { isApiError } from '@/lib/api';
+import { ApiErrorKind, isApiError } from '@/lib/api';
 
 /** A short, user-facing explanation of a failed request. */
 export function describeError(error: unknown): string {
   if (!isApiError(error)) return 'Something went wrong. Please try again.';
   switch (error.kind) {
-    case 'network':
+    case ApiErrorKind.Network:
       return "Can't reach the server. Check your connection and try again.";
-    case 'timeout':
+    case ApiErrorKind.Timeout:
       return 'The server took too long to respond. Please try again.';
-    case 'parse':
+    case ApiErrorKind.Parse:
       return 'The server sent an unreadable response. Please try again.';
-    case 'http':
+    case ApiErrorKind.Http:
       break;
   }
   if (error.status === 429) {
