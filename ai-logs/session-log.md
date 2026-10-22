@@ -495,3 +495,24 @@ Response:
 Files changed: `package.json`, `package-lock.json`, `tsconfig.json`, `src/lib/money.ts`, `src/lib/money.test.ts`, `ai-logs/session-log.md`
 
 Suggested commit: `feat: add exact decimal money utilities with unit tests`
+
+## 21:52 — Commit 4: balances screen
+
+Prompt:
+
+```text
+Start commit 4: the balances screen. You may create QueryState and the balances query hooks.
+```
+
+Response:
+
+- Built the Home screen: a total-balance card (available + pending + claiming in USD, with the three-part breakdown), one card per asset, an "Updated N s ago" freshness line from the snapshot's `asOf`, a Refresh button, and a 15 s auto-refresh that matches the server's snapshot cadence. Created `QueryState` (loading, error with Retry, empty, data), the balances query hook and keys, and a `Button` link variant.
+- Choices to explain: if a refresh fails while data is on screen, the data stays and an error banner with Retry shows above it. A snapshot older than 60 s is marked "may be out of date". Refresh is a button because `RefreshControl` does nothing on web. GET queries retry twice, but only for network, timeout, 429 and 5xx errors, and 429 waits `retryAfterMs`. Any 401 clears the token and the cache and returns to the token screen with a notice.
+- Tested in the browser at 375px with the API mocked inside the page, so your real token was never used. Loading, a first-load failure with Retry, data, a failed refresh with data kept, a stale snapshot, an empty list, a malformed value (the totals show a dash), a 429 message and a 401 all behaved as designed. The USD numbers on screen matched an independent Python `decimal` calculation to the cent.
+- Also tested against the real API with a fake token: one request, a clean 401 (no retries), the token screen with the notice, and storage cleared. This confirms the real browser-to-API path (CORS) works.
+- `npx tsc --noEmit` exits 0 and `npm test` shows 71 passed (5 new tests for `formatAmountString` and `formatAge`). I ran no git commands.
+- Not verified: how the screen renders a real-token response (the `TODO: verify` fields in `src/types.ts` are still open), and clock skew (the age compares the device clock with the server's `asOf`). There is no Claim button yet; it comes with commit 5.
+
+Files changed: `src/app/_layout.tsx`, `src/app/index.tsx`, `src/app/token.tsx`, `src/components/Button.tsx`, `src/components/QueryState.tsx`, `src/features/auth/TokenProvider.tsx`, `src/features/balances/` (AmountRow, BalanceCard, BalancesView, Freshness, TotalCard, keys, useBalances), `src/lib/queryClient.ts`, `src/lib/errors.ts`, `src/lib/time.ts`, `src/lib/time.test.ts`, `src/lib/money.ts`, `src/lib/money.test.ts`, `src/theme.ts`, `ai-logs/session-log.md`
+
+Suggested commit: `feat: add balances screen with total, freshness, refresh and 401 handling`

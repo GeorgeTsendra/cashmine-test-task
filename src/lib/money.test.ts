@@ -4,6 +4,7 @@ import {
   add,
   balanceTotalsUsd,
   compare,
+  formatAmountString,
   formatDecimal,
   formatUsd,
   multiply,
@@ -99,6 +100,19 @@ describe('formatDecimal', () => {
     expect(formatDecimal(dec('1234567.89'), true)).toBe('1,234,567.89');
     expect(formatDecimal(dec('999'), true)).toBe('999');
     expect(formatDecimal(dec('1000'), true)).toBe('1,000');
+  });
+});
+
+describe('formatAmountString', () => {
+  it('shows API amounts in canonical form with grouped thousands', () => {
+    expect(formatAmountString('820.413207')).toBe('820.413207');
+    expect(formatAmountString('1234567.5')).toBe('1,234,567.5');
+    expect(formatAmountString('100.00')).toBe('100');
+    expect(formatAmountString('0')).toBe('0');
+  });
+
+  it('returns unreadable text unchanged instead of hiding it', () => {
+    expect(formatAmountString('abc')).toBe('abc');
   });
 });
 

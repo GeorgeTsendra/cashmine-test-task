@@ -115,6 +115,12 @@ export function formatDecimal(value: Decimal, group = false): string {
   return negative ? `-${body}` : body;
 }
 
+/** Display form of an amount string from the API: canonical, thousands grouped. Unparseable text is returned as is. */
+export function formatAmountString(text: string): string {
+  const value = parseDecimal(text);
+  return value ? formatDecimal(value, true) : text;
+}
+
 /** Formats a USD value as "$1,234.57": rounded once, to cents, ties away from zero. */
 export function formatUsd(value: Decimal): string {
   const cents = roundToScale(value, 2);

@@ -1,11 +1,10 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { TokenProvider, useToken } from '@/features/auth/TokenProvider';
+import { queryClient } from '@/lib/queryClient';
 import { colors } from '@/theme';
-
-const queryClient = new QueryClient();
 
 function RootStack() {
   const { status, token } = useToken();
