@@ -8,6 +8,7 @@ import { Button, ButtonVariant } from '@/components/Button';
 import { QueryState } from '@/components/QueryState';
 import { balancesKeys } from '@/features/balances/keys';
 import { formatAmountString } from '@/lib/money';
+import { strings } from '@/strings';
 import { colors, fontSize, radius, spacing } from '@/theme';
 import { ClaimStatus, type Claim, type ClaimOptions } from '@/types';
 
@@ -27,16 +28,16 @@ export function ClaimStatusView({ id }: { id: string }) {
   }, [status, queryClient]);
 
   return (
-    <QueryState query={claim} loadingLabel="Loading claim…">
+    <QueryState query={claim} loadingLabel={strings.status.loading}>
       {(data) => <ClaimStatusCard claim={data} />}
     </QueryState>
   );
 }
 
 const TITLES: Record<ClaimStatus, string> = {
-  [ClaimStatus.Pending]: 'Claim in progress',
-  [ClaimStatus.Completed]: 'Claim completed',
-  [ClaimStatus.Failed]: 'Claim failed',
+  [ClaimStatus.Pending]: strings.status.titles.pending,
+  [ClaimStatus.Completed]: strings.status.titles.completed,
+  [ClaimStatus.Failed]: strings.status.titles.failed,
 };
 
 function ClaimStatusCard({ claim }: { claim: Claim }) {
@@ -55,31 +56,30 @@ function ClaimStatusCard({ claim }: { claim: Claim }) {
         </Text>
         {claim.status === ClaimStatus.Pending && (
           <Text style={styles.body}>
-            This usually takes about 20 seconds. You can leave this page. Your balance catches up within about 15
-            seconds.
+            {strings.status.pendingBody}
           </Text>
         )}
-        {claim.status === ClaimStatus.Completed && <Text style={styles.body}>{unit(claim.receiveAmount)} was sent to {destination}.</Text>}
+        {claim.status === ClaimStatus.Completed && <Text style={styles.body}>{strings.status.completedBody(unit(claim.receiveAmount), destination)}</Text>}
         {claim.status === ClaimStatus.Failed && (
           <Text style={styles.body}>
-            Your {unit(claim.amount)} is back in your available balance.
-            {claim.failureReason !== null ? ` Reason: ${claim.failureReason}` : ''}
+            {strings.status.failedBody(unit(claim.amount))}
+            {claim.failureReason !== null ? strings.status.failureReason(claim.failureReason) : ''}
           </Text>
         )}
       </View>
 
       <View style={styles.card}>
-        <AmountRow label="Amount" value={unit(claim.amount)} />
-        <AmountRow label="Fee" value={unit(claim.fee)} />
-        <AmountRow label="You receive" value={unit(claim.receiveAmount)} strong />
-        <AmountRow label="To" value={destination} />
+        <AmountRow label={strings.common.amount} value={unit(claim.amount)} />
+        <AmountRow label={strings.common.fee} value={unit(claim.fee)} />
+        <AmountRow label={strings.common.youReceive} value={unit(claim.receiveAmount)} strong />
+        <AmountRow label={strings.common.to} value={destination} />
       </View>
-      <Text style={styles.muted}>Claim {claim.id}</Text>
+      <Text style={styles.muted}>{strings.status.claimId(claim.id)}</Text>
 
-      <Button label="Back to balances" onPress={() => router.replace('/')} />
+      <Button label={strings.status.backToBalances} onPress={() => router.replace('/')} />
       {claim.status === ClaimStatus.Failed && (
         <Button
-          label="Try again"
+          label={strings.status.tryAgain}
           variant={ButtonVariant.Secondary}
           onPress={() => router.replace({ pathname: '/claim', params: { asset: claim.asset } })}
         />

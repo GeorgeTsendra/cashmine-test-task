@@ -1,4 +1,5 @@
 import { AmountError, formatAmountString } from '@/lib/money';
+import { strings } from '@/strings';
 
 interface AmountErrorContext {
   asset: string;
@@ -11,18 +12,18 @@ interface AmountErrorContext {
 export function describeAmountError(error: AmountError, ctx: AmountErrorContext): string {
   switch (error) {
     case AmountError.Empty:
-      return 'Enter an amount.';
+      return strings.amountErrors.empty;
     case AmountError.Format:
-      return 'Use digits and a dot, for example 0.5. No commas, signs or leading zeros.';
+      return strings.amountErrors.format;
     case AmountError.TooManyDecimals:
-      return `${ctx.asset} allows at most ${ctx.decimals} decimal places.`;
+      return strings.amountErrors.tooManyDecimals(ctx.asset, ctx.decimals);
     case AmountError.BelowMin:
-      return `The minimum is ${formatAmountString(ctx.minAmount)} ${ctx.asset}.`;
+      return strings.amountErrors.belowMin(`${formatAmountString(ctx.minAmount)} ${ctx.asset}`);
     case AmountError.AboveAvailable:
-      return `You can claim at most ${formatAmountString(ctx.available)} ${ctx.asset}.`;
+      return strings.amountErrors.aboveAvailable(`${formatAmountString(ctx.available)} ${ctx.asset}`);
     case AmountError.ReceiveNotPositive:
-      return 'The amount must be larger than the fee.';
+      return strings.amountErrors.receiveNotPositive;
     case AmountError.RulesUnavailable:
-      return "Can't read the claim limits right now. Try again.";
+      return strings.amountErrors.rulesUnavailable;
   }
 }

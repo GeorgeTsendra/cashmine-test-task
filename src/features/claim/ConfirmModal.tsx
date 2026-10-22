@@ -2,6 +2,7 @@ import { Modal, StyleSheet, Text, View } from 'react-native';
 
 import { AmountRow } from '@/components/AmountRow';
 import { Button, ButtonVariant } from '@/components/Button';
+import { strings } from '@/strings';
 import { colors, fontSize, MAX_CONTENT_WIDTH, radius, spacing } from '@/theme';
 
 /**
@@ -31,11 +32,10 @@ interface ConfirmModalProps {
 }
 
 const NOTES: Record<ConfirmPhase, string> = {
-  [ConfirmPhase.Confirm]: 'This sends the claim to the destination above and cannot be undone.',
-  [ConfirmPhase.Submitting]: "Sending your claim. Please don't close this page.",
-  [ConfirmPhase.Unknown]:
-    "We couldn't confirm whether your claim went through. It may already be in progress. Checking again sends the same request, so it can never create a second claim.",
-  [ConfirmPhase.Rejected]: 'Nothing was claimed.',
+  [ConfirmPhase.Confirm]: strings.confirm.notes.confirm,
+  [ConfirmPhase.Submitting]: strings.confirm.notes.submitting,
+  [ConfirmPhase.Unknown]: strings.confirm.notes.unknown,
+  [ConfirmPhase.Rejected]: strings.confirm.notes.rejected,
 };
 
 export function ConfirmModal({
@@ -56,13 +56,13 @@ export function ConfirmModal({
       <View style={styles.backdrop}>
         <View accessibilityViewIsModal style={styles.card}>
           <Text accessibilityRole="header" style={styles.title}>
-            Confirm claim
+            {strings.confirm.title}
           </Text>
           <View style={styles.rows}>
-            <AmountRow label="Amount" value={`${amount} ${asset}`} />
-            <AmountRow label="Fee" value={`${fee} ${asset}`} />
-            <AmountRow label="You receive" value={`${receive} ${asset}`} strong />
-            <AmountRow label="To" value={destination} />
+            <AmountRow label={strings.common.amount} value={`${amount} ${asset}`} />
+            <AmountRow label={strings.common.fee} value={`${fee} ${asset}`} />
+            <AmountRow label={strings.common.youReceive} value={`${receive} ${asset}`} strong />
+            <AmountRow label={strings.common.to} value={destination} />
           </View>
           {phase === ConfirmPhase.Rejected && message !== null && (
             <Text accessibilityRole="alert" style={styles.problem}>
@@ -75,12 +75,12 @@ export function ConfirmModal({
           <View style={styles.actions}>
             {phase === ConfirmPhase.Rejected ? null : (
               <Button
-                label={busy ? 'Submitting…' : phase === ConfirmPhase.Unknown ? 'Check again' : 'Confirm claim'}
+                label={busy ? strings.confirm.submitting : phase === ConfirmPhase.Unknown ? strings.confirm.checkAgain : strings.confirm.confirm}
                 disabled={busy}
                 onPress={onConfirm}
               />
             )}
-            <Button label={phase === ConfirmPhase.Confirm ? 'Cancel' : 'Close'} variant={ButtonVariant.Secondary} disabled={busy} onPress={onCancel} />
+            <Button label={phase === ConfirmPhase.Confirm ? strings.common.cancel : strings.common.close} variant={ButtonVariant.Secondary} disabled={busy} onPress={onCancel} />
           </View>
         </View>
       </View>

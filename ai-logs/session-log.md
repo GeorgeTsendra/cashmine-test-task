@@ -758,3 +758,22 @@ Response:
 Files changed: `src/types.ts`, `src/lib/api.ts`, `src/lib/errors.ts`, `src/lib/queryClient.ts`, `src/lib/money.ts`, `src/lib/money.test.ts`, `src/components/Button.tsx`, `src/components/QueryState.tsx`, `src/app/_layout.tsx`, `src/app/index.tsx`, `src/app/claim.tsx`, `src/features/auth/TokenProvider.tsx`, `src/features/balances/` (BalanceCard, Freshness), `src/features/claim/` (AmountField, ClaimForm, ClaimStatusView, ConfirmModal, PendingAttemptBanner, messages, useClaim), `ai-logs/session-log.md`
 
 Suggested commit: `refactor: use enums instead of string unions and const lists`
+
+## 22:38 — Move display text into constants
+
+Prompt:
+
+```text
+Move the texts into constants so that localization can be easily added.
+```
+
+Response:
+
+- Added `src/strings.ts`, a single `strings` object grouped by area (common, time, token, home, balances, query, errors, amount errors, claim, confirm, status, attempt). Texts with values in them are small functions, for example `strings.claim.availableLine(amount)` and `strings.amountErrors.tooManyDecimals(asset, decimals)`, so word order can differ per language. It also exports a `Strings` type: to add a language, write another object with that shape and choose it by locale in this one file.
+- Replaced every display text in the screens, components and libraries (including accessibility labels, placeholders, error messages and the "x s ago" times) with those constants. The English text is unchanged. A search afterwards found no display text left outside `strings.ts`.
+- Left out on purpose: the developer-facing error messages inside `ApiError` (never shown, because `describeError` maps by kind), the server's own message for client errors such as a 400 (it comes from the API in English), and code comments. No i18n library was added, as that would be a new dependency; the next step would be a locale picker plus a second `Strings` object.
+- Tested in the browser at 375px with the API mocked: the token screen, Home, the claim form and its validation messages, and the confirm dialog showed exactly the same text as before. `npx tsc --noEmit` exits 0 and `npm test` shows 75 passed. I ran no git commands.
+
+Files changed: `src/strings.ts` (new), `src/app/` (_layout, claim, index, token, claims/[id]), `src/components/QueryState.tsx`, `src/features/auth/TokenProvider.tsx`, `src/features/balances/` (BalanceCard, BalancesView, Freshness, TotalCard), `src/features/claim/` (AmountField, ClaimForm, ClaimStatusView, ClaimView, ConfirmModal, PendingAttemptBanner, messages), `src/lib/errors.ts`, `src/lib/time.ts`, `ai-logs/session-log.md`
+
+Suggested commit: `refactor: move display text into src/strings.ts for localization`

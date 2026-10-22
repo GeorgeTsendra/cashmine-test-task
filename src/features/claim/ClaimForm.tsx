@@ -8,6 +8,7 @@ import { QueryState } from '@/components/QueryState';
 import { describeError } from '@/lib/errors';
 import { AmountError, formatAmountString, formatDecimal, isPositive, parseDecimal, validateClaimAmount } from '@/lib/money';
 import { newIdempotencyKey } from '@/lib/uuid';
+import { strings } from '@/strings';
 import { colors, fontSize, radius, spacing } from '@/theme';
 import type { BalanceItem, ClaimAttempt, ClaimOptions } from '@/types';
 
@@ -20,7 +21,7 @@ import { mayBeInFlight, useSubmitClaim } from './useSubmitClaim';
 // The options query is owned by ClaimView, so remounting this form on an asset switch cannot cancel it.
 export function ClaimForm({ item, options }: { item: BalanceItem; options: UseQueryResult<ClaimOptions> }) {
   return (
-    <QueryState query={options} loadingLabel="Loading claim options…">
+    <QueryState query={options} loadingLabel={strings.claim.loadingOptions}>
       {(data) => <ClaimFormBody item={item} options={data} />}
     </QueryState>
   );
@@ -71,7 +72,7 @@ function ClaimFormBody({ item, options }: { item: BalanceItem; options: ClaimOpt
 
   return (
     <View style={styles.stack}>
-      <Text style={styles.muted}>Available: {unit(item.available)}</Text>
+      <Text style={styles.muted}>{strings.claim.availableLine(unit(item.available))}</Text>
       <AmountField
         asset={asset}
         value={amount}
@@ -82,27 +83,27 @@ function ClaimFormBody({ item, options }: { item: BalanceItem; options: ClaimOpt
       />
 
       <View style={styles.card}>
-        <AmountRow label="Fee" value={unit(options.fee)} />
-        <AmountRow label="Minimum" value={unit(options.minAmount)} />
-        <AmountRow label="You receive" value={result.ok ? `${formatDecimal(result.receive, true)} ${asset}` : '—'} strong />
+        <AmountRow label={strings.common.fee} value={unit(options.fee)} />
+        <AmountRow label={strings.common.minimum} value={unit(options.minAmount)} />
+        <AmountRow label={strings.common.youReceive} value={result.ok ? `${formatDecimal(result.receive, true)} ${asset}` : strings.common.noValue} strong />
       </View>
 
       {options.destinations.length === 0 && (
         <Text accessibilityRole="alert" style={styles.problem}>
-          No destination is available for {asset} right now.
+          {strings.claim.noDestination(asset)}
         </Text>
       )}
-      {options.destinations.length === 1 && <AmountRow label="To" value={options.destinations[0].label} />}
+      {options.destinations.length === 1 && <AmountRow label={strings.common.to} value={options.destinations[0].label} />}
       {options.destinations.length > 1 && (
         <ChoicePicker
-          label="Destination"
+          label={strings.claim.destinationGroup}
           choices={options.destinations.map((d) => ({ value: d.id, label: d.label }))}
           selected={destinationId}
           onSelect={setDestinationId}
         />
       )}
 
-      <Button label="Review claim" disabled={!result.ok || destination === undefined} onPress={() => setConfirming(true)} />
+      <Button label={strings.claim.review} disabled={!result.ok || destination === undefined} onPress={() => setConfirming(true)} />
 
       {result.ok && destination !== undefined && (
         <ConfirmModal

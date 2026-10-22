@@ -5,6 +5,7 @@ import { Screen } from '@/components/Screen';
 import { useToken } from '@/features/auth/TokenProvider';
 import { BalancesView } from '@/features/balances/BalancesView';
 import { PendingAttemptBanner } from '@/features/claim/PendingAttemptBanner';
+import { strings } from '@/strings';
 import { colors, fontSize, spacing } from '@/theme';
 
 export default function HomeScreen() {
@@ -14,9 +15,9 @@ export default function HomeScreen() {
     <Screen>
       <View style={styles.header}>
         <Text accessibilityRole="header" style={styles.title}>
-          Payback
+          {strings.home.title}
         </Text>
-        <Button label="Change token" variant={ButtonVariant.Link} onPress={() => void clearToken()} />
+        <Button label={strings.home.changeToken} variant={ButtonVariant.Link} onPress={() => void clearToken()} />
       </View>
       <PendingAttemptBanner />
       <BalancesView />

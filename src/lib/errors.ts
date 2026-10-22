@@ -1,22 +1,23 @@
 import { ApiErrorKind, isApiError } from '@/lib/api';
+import { strings } from '@/strings';
 
 /** A short, user-facing explanation of a failed request. */
 export function describeError(error: unknown): string {
-  if (!isApiError(error)) return 'Something went wrong. Please try again.';
+  if (!isApiError(error)) return strings.errors.generic;
   switch (error.kind) {
     case ApiErrorKind.Network:
-      return "Can't reach the server. Check your connection and try again.";
+      return strings.errors.network;
     case ApiErrorKind.Timeout:
-      return 'The server took too long to respond. Please try again.';
+      return strings.errors.timeout;
     case ApiErrorKind.Parse:
-      return 'The server sent an unreadable response. Please try again.';
+      return strings.errors.unreadable;
     case ApiErrorKind.Http:
       break;
   }
   if (error.status === 429) {
     const seconds = error.retryAfterMs === null ? null : Math.ceil(error.retryAfterMs / 1000);
-    return seconds === null ? 'Too many requests. Try again in a moment.' : `Too many requests. Try again in ${seconds} s.`;
+    return seconds === null ? strings.errors.tooManyRequests : strings.errors.tooManyRequestsIn(seconds);
   }
-  if (error.status !== null && error.status >= 500) return 'The server had a problem. Please try again.';
+  if (error.status !== null && error.status >= 500) return strings.errors.server;
   return error.message;
 }

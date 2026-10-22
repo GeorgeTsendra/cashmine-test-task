@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { useToken } from '@/features/auth/TokenProvider';
+import { strings } from '@/strings';
 import { colors, fontSize, MIN_TAP, radius, spacing } from '@/theme';
 
 export default function TokenScreen() {
@@ -15,9 +16,9 @@ export default function TokenScreen() {
   function submit() {
     const token = value.trim();
     if (token === '') {
-      setError('Paste your access token to continue.');
+      setError(strings.token.errorEmpty);
     } else if (/\s/.test(token)) {
-      setError('The token must not contain spaces or line breaks.');
+      setError(strings.token.errorSpaces);
     } else {
       setError(null);
       void saveToken(token);
@@ -28,9 +29,9 @@ export default function TokenScreen() {
     <Screen>
       <View style={styles.header}>
         <Text accessibilityRole="header" style={styles.title}>
-          CashMine
+          {strings.token.title}
         </Text>
-        <Text style={styles.subtitle}>Enter your access token to see and claim your payback.</Text>
+        <Text style={styles.subtitle}>{strings.token.subtitle}</Text>
       </View>
 
       {notice !== null && (
@@ -40,10 +41,10 @@ export default function TokenScreen() {
       )}
 
       <View style={styles.field}>
-        <Text style={styles.label}>Access token</Text>
+        <Text style={styles.label}>{strings.token.label}</Text>
         <View style={[styles.inputRow, error !== null && styles.inputRowError]}>
           <TextInput
-            accessibilityLabel="Access token"
+            accessibilityLabel={strings.token.label}
             autoCapitalize="none"
             autoComplete="off"
             autoCorrect={false}
@@ -52,7 +53,7 @@ export default function TokenScreen() {
               if (error !== null) setError(null);
             }}
             onSubmitEditing={submit}
-            placeholder="Paste token"
+            placeholder={strings.token.placeholder}
             placeholderTextColor={colors.textMuted}
             returnKeyType="go"
             secureTextEntry={!visible}
@@ -60,12 +61,12 @@ export default function TokenScreen() {
             value={value}
           />
           <Pressable
-            accessibilityLabel={visible ? 'Hide token' : 'Show token'}
+            accessibilityLabel={visible ? strings.token.hideToken : strings.token.showToken}
             accessibilityRole="button"
             onPress={() => setVisible((current) => !current)}
             style={styles.toggle}
           >
-            <Text style={styles.toggleLabel}>{visible ? 'Hide' : 'Show'}</Text>
+            <Text style={styles.toggleLabel}>{visible ? strings.token.hide : strings.token.show}</Text>
           </Pressable>
         </View>
         {error !== null && (
@@ -75,7 +76,7 @@ export default function TokenScreen() {
         )}
       </View>
 
-      <Button label="Continue" onPress={submit} />
+      <Button label={strings.token.continue} onPress={submit} />
     </Screen>
   );
 }

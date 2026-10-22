@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { QueryState } from '@/components/QueryState';
 import { useBalances } from '@/features/balances/useBalances';
+import { strings } from '@/strings';
 import { spacing } from '@/theme';
 
 import { ChoicePicker } from './ChoicePicker';
@@ -32,16 +33,16 @@ export function ClaimView({ initialAsset }: { initialAsset?: string }) {
       <QueryState
         query={balances}
         isEmpty={(data) => data.items.length === 0}
-        loadingLabel="Loading balances…"
-        emptyTitle="Nothing to claim yet"
-        emptyMessage="Your balances will appear here once you have earned payback."
+        loadingLabel={strings.balances.loading}
+        emptyTitle={strings.claim.emptyTitle}
+        emptyMessage={strings.balances.emptyMessage}
       >
         {(data) => {
           const item = data.items.find((i) => i.asset === active) ?? data.items[0];
           return (
             <View style={styles.stack}>
               <ChoicePicker
-                label="Asset"
+                label={strings.claim.assetGroup}
                 choices={data.items.map((i) => ({ value: i.asset, label: i.asset }))}
                 selected={item.asset}
                 onSelect={selectAsset}

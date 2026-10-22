@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Button, ButtonVariant } from '@/components/Button';
 import { formatAge } from '@/lib/time';
+import { strings } from '@/strings';
 import { colors, fontSize, radius, spacing } from '@/theme';
 
 // The server recomputes balances every 15 seconds; a snapshot much older than that is suspect.
@@ -33,11 +34,11 @@ export function Freshness({ asOf, isFetching, onRefresh }: FreshnessProps) {
   return (
     <View style={[styles.row, stale && styles.staleRow]}>
       <Text style={[styles.text, stale && styles.staleText]}>
-        {known ? `Updated ${formatAge(age)}` : 'Updated at an unknown time'}
-        {stale ? ' · may be out of date' : ''}
+        {known ? strings.balances.updated(formatAge(age)) : strings.balances.updatedUnknown}
+        {stale ? strings.balances.mayBeOutOfDate : ''}
       </Text>
       <Button
-        label={isFetching ? 'Refreshing…' : 'Refresh'}
+        label={isFetching ? strings.balances.refreshing : strings.balances.refresh}
         variant={ButtonVariant.Link}
         disabled={isFetching}
         onPress={onRefresh}

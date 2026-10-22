@@ -3,6 +3,7 @@ import { StyleSheet, Text } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { ClaimStatusView } from '@/features/claim/ClaimStatusView';
+import { strings } from '@/strings';
 import { colors, fontSize, spacing } from '@/theme';
 
 export default function ClaimStatusScreen() {
@@ -11,7 +12,7 @@ export default function ClaimStatusScreen() {
   return (
     <Screen>
       <Text accessibilityRole="header" style={styles.title}>
-        Claim
+        {strings.claim.title}
       </Text>
       <ClaimStatusView id={id} />
     </Screen>

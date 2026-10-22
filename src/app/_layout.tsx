@@ -4,6 +4,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { AuthStatus, TokenProvider, useToken } from '@/features/auth/TokenProvider';
 import { queryClient } from '@/lib/queryClient';
+import { strings } from '@/strings';
 import { colors } from '@/theme';
 
 function RootStack() {
@@ -12,7 +13,7 @@ function RootStack() {
   if (status === AuthStatus.Loading) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator accessibilityLabel="Loading" color={colors.primary} />
+        <ActivityIndicator accessibilityLabel={strings.common.loading} color={colors.primary} />
       </View>
     );
   }

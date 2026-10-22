@@ -3,13 +3,12 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 
 import { setUnauthorizedHandler } from '@/lib/queryClient';
 import { readToken, removeClaimAttempt, removeToken, saveToken as persistToken } from '@/lib/storage';
+import { strings } from '@/strings';
 
 export enum AuthStatus {
   Loading = 'loading',
   Ready = 'ready',
 }
-
-const UNAUTHORIZED_NOTICE = 'Your token was rejected or has expired. Enter a new one to continue.';
 
 interface TokenContextValue {
   /** Loading until the stored token has been read. */
@@ -45,7 +44,7 @@ export function TokenProvider({ children }: { children: ReactNode }) {
   // token, so it goes too.
   useEffect(() => {
     setUnauthorizedHandler(() => {
-      setNotice(UNAUTHORIZED_NOTICE);
+      setNotice(strings.token.rejected);
       setToken(null);
       queryClient.clear();
       void removeToken();
