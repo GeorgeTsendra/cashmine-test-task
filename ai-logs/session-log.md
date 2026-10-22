@@ -677,3 +677,43 @@ Response:
 Files changed: `ai-logs/balance-after-claim.md`, `ai-logs/session-log.md`
 
 Suggested commit: `docs: record claim check findings and rate limit`
+
+## 22:22 — Commit 5: claim form with fee preview, validation and confirm
+
+Prompt:
+
+```text
+Yes. I'll run the corrected check myself and paste the output. Start commit 5 now: the claim form with fee preview, validation and confirm.
+```
+
+Response:
+
+- Built the claim form at `/claim?asset=…`. It has an asset picker taken from the balances, an amount field with Max, live validation through the money library with a specific message for each rule, a fee, minimum and "You receive" preview, the destination (shown when there is one, a picker when there are several), and a Review button that opens a confirm dialog. Each asset card on Home now has a Claim button that is disabled when nothing is available.
+- The Confirm button only closes the dialog for now. Submitting the claim is commit 6, as planned.
+- Tested in the browser at 375px with the API mocked in the page, using values from your real run (USDT, BTC and ETH, `dest_exchange`). The messages for bad format, below minimum, too many decimals and above available all showed, and Review stayed disabled until the amount was valid. Max filled 870.533207 and the receive amount showed 869.033207. The ETH balance with 18 decimals displayed exactly and ETH offered two destinations. A failing claim-options request showed an error with Retry after three attempts. Cancel closed the dialog.
+- Because of the rate limit you found, claim options are cached for 60 s and balances for 10 s. Opening the claim screen from Home had made a second balances request within 2 s. I also fixed a small overflow of the Max button.
+- Small additions: the shared `AmountRow` moved to `src/components`, `Button` got an optional `accessibilityLabel`, and `isPositive` got a test. `npx tsc --noEmit` exits 0 and `npm test` shows 72 passed. I ran no git commands.
+- Not verified: responses with your real token, the on-screen keyboard on a real phone, and anything after Confirm.
+
+Files changed: `src/app/claim.tsx`, `src/app/_layout.tsx`, `src/components/AmountRow.tsx`, `src/components/Button.tsx`, `src/features/claim/` (AmountField, ChoicePicker, ClaimForm, ClaimView, ConfirmModal, keys, messages, useClaimOptions), `src/features/balances/` (BalanceCard, TotalCard, useBalances, AmountRow removed), `src/lib/money.ts`, `src/lib/money.test.ts`, `ai-logs/session-log.md`
+
+Suggested commit: `feat: add claim form with fee preview, validation and confirm dialog`
+
+## 22:25 — Fix: claim-options requests canceled when switching assets
+
+Prompt:
+
+```text
+Move the request to https://task-api.cashmine.io/v1/claim-options to a higher level (e.g., the view-model or a shared state layer) so that it doesn't switch to a "canceled" state when tabs are toggled.
+```
+
+Response:
+
+- Found the cause in React Query's source. Each asset's form was keyed by asset and owned its own claim-options query, so switching assets unmounted it. React Query cancels a request when its last observer goes away and the query function read the abort signal (`query.js`, `abortSignalConsumed`), and the browser shows that as "canceled".
+- Moved the requests up to `ClaimView`, which stays mounted while you switch assets. A new `useClaimOptionsByAsset(active, visited)` hook uses `useQueries` for the active asset plus every asset visited before, and `ClaimForm` now receives the query result as a prop. Only visited assets are requested, so the rate limit is not hit by prefetching all of them. The options request also no longer takes the caller's abort signal, because a cancelled request still counts against the rate limit.
+- Tested in the browser at 375px with the API mocked and options made slow (6 s). I switched BTC, ETH and BTC again while the first requests were in flight: exactly one request per asset, none cancelled, both finished, and the form showed the data. Switching to ETH afterwards showed cached data with no new request. I did not reproduce the old cancelled state in the browser; the cause rests on the source.
+- `npx tsc --noEmit` exits 0 and `npm test` shows 72 passed. I ran no git commands.
+
+Files changed: `src/features/claim/useClaimOptionsByAsset.ts` (new, replaces `useClaimOptions.ts`), `src/features/claim/ClaimView.tsx`, `src/features/claim/ClaimForm.tsx`, `ai-logs/session-log.md`
+
+Suggested commit: `fix: own claim-options queries in ClaimView so switching assets never cancels them`

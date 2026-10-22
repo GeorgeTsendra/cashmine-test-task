@@ -7,6 +7,8 @@ import { balancesKeys } from './keys';
 
 // The server recomputes balances every 15 seconds, so asking more often gains nothing.
 const REFETCH_INTERVAL_MS = 15_000;
+// The API rate-limits aggressively: opening another screen that shows balances should reuse fresh data.
+const STALE_MS = 10_000;
 
 export function useBalances() {
   const { token } = useToken();
@@ -15,5 +17,6 @@ export function useBalances() {
     queryFn: ({ signal }) => getBalances({ token: token ?? '', signal }),
     enabled: token !== null,
     refetchInterval: REFETCH_INTERVAL_MS,
+    staleTime: STALE_MS,
   });
 }

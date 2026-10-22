@@ -1,12 +1,14 @@
+import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { balanceTotalsUsd, formatAmountString, formatUsd } from '@/lib/money';
+import { AmountRow } from '@/components/AmountRow';
+import { Button } from '@/components/Button';
+import { balanceTotalsUsd, formatAmountString, formatUsd, isPositive } from '@/lib/money';
 import { colors, fontSize, radius, spacing } from '@/theme';
 import type { BalanceItem } from '@/types';
 
-import { AmountRow } from './AmountRow';
-
 export function BalanceCard({ item }: { item: BalanceItem }) {
+  const router = useRouter();
   const usd = balanceTotalsUsd([item]);
   const amount = (value: string) => `${formatAmountString(value)} ${item.asset}`;
 
@@ -21,6 +23,15 @@ export function BalanceCard({ item }: { item: BalanceItem }) {
       <AmountRow label="Available" value={amount(item.available)} strong />
       <AmountRow label="Pending" value={amount(item.pending)} />
       <AmountRow label="Claiming" value={amount(item.claiming)} />
+      <View style={styles.action}>
+        <Button
+          label="Claim"
+          accessibilityLabel={`Claim ${item.asset}`}
+          variant="secondary"
+          disabled={!isPositive(item.available)}
+          onPress={() => router.push({ pathname: '/claim', params: { asset: item.asset } })}
+        />
+      </View>
     </View>
   );
 }
@@ -48,5 +59,8 @@ const styles = StyleSheet.create({
   usd: {
     fontSize: fontSize.lg,
     color: colors.textMuted,
+  },
+  action: {
+    paddingTop: spacing.md,
   },
 });

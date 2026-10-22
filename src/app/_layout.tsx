@@ -25,6 +25,7 @@ function RootStack() {
       </Stack.Protected>
       <Stack.Protected guard={hasToken}>
         <Stack.Screen name="index" />
+        <Stack.Screen name="claim" />
       </Stack.Protected>
     </Stack>
   );

@@ -115,6 +115,12 @@ export function formatDecimal(value: Decimal, group = false): string {
   return negative ? `-${body}` : body;
 }
 
+/** True when `text` is a readable decimal greater than zero. */
+export function isPositive(text: string): boolean {
+  const value = parseDecimal(text);
+  return value !== null && value.units > ZERO;
+}
+
 /** Display form of an amount string from the API: canonical, thousands grouped. Unparseable text is returned as is. */
 export function formatAmountString(text: string): string {
   const value = parseDecimal(text);
