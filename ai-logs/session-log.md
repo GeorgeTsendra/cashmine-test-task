@@ -777,3 +777,43 @@ Response:
 Files changed: `src/strings.ts` (new), `src/app/` (_layout, claim, index, token, claims/[id]), `src/components/QueryState.tsx`, `src/features/auth/TokenProvider.tsx`, `src/features/balances/` (BalanceCard, BalancesView, Freshness, TotalCard), `src/features/claim/` (AmountField, ClaimForm, ClaimStatusView, ClaimView, ConfirmModal, PendingAttemptBanner, messages), `src/lib/errors.ts`, `src/lib/time.ts`, `ai-logs/session-log.md`
 
 Suggested commit: `refactor: move display text into src/strings.ts for localization`
+
+## 22:42 — NOTES.md and README.md
+
+Prompt (two messages in this turn):
+
+```text
+Write NOTES.md and README.md now. Ship approach A (snapshot only, with the in-progress notice that is already on the claim screen) and list the overlay (approach C) under next steps.
+and add:
+
+<pasted_content id="321e">
+### Next steps
+- Activity: paginated history of accruals, reversals and claims (infinite scroll, filters by type/asset).
+- Localization: i18n for copy, plus locale-aware number, currency and date formatting.
+- Multiple accounts: switch between saved tokens, with the query cache and pending claims kept per account.
+- Cross-device claims: reconcile the balance overlay with server-side pending claims, not only claims made in this browser.
+- Claim flow tests: mock-fetch tests for timeout, unknown result, retry with the same idempotency key, and failed claims.
+- Offline handling: detect offline state, block Claim, and show cached balances with a clear "offline" label.
+- Pull-to-refresh and auto-refresh aligned with the 15 s snapshot interval.
+- Accessibility pass: screen reader labels on amounts, focus order, dynamic font sizes.
+- Security: on native, the token is in SecureStore; on web, an httpOnly cookie via a backend proxy instead of localStorage.
+- Error monitoring (e.g. Sentry) and analytics on claim success/failure rates.
+- Native builds: run and polish on iOS/Android (haptics, biometric confirmation before a claim).
+- E2E tests (Playwright for web, Maestro for native) for the full claim journey.
+</pasted_content>
+
+---
+
+and design update also
+```
+
+Response:
+
+- Wrote `NOTES.md` with the three sections the brief asks for. Decisions: amounts as exact `bigint` decimals, approach A for the balance after a claim (with the reasons C was not built), and replaying the same Idempotency-Key for an unknown result, plus the smaller choices. "Working with AI" has three moments with pointers into `ai-logs/`: the claim check that did not run as intended, the cancelled claim-options requests and the rate limit, and rejecting `localStorage` and the recommendation to build C. "Not done / known issues" lists what is unverified, including the open `TODO: verify` markers.
+- Added your Next steps list, with the overlay (C) first and a "Design update" item as my reading of "design update also". I made two small corrections to your list so it matches the app: pull-to-refresh is now native-only (the web has a Refresh button and a 15 s auto-refresh already), and the SecureStore line says "keep the token in SecureStore". Replace the design line if you meant something else.
+- Rewrote `README.md` with the live-link line (a placeholder for you to fill in), how to run, test and build, how to deploy to Netlify, what works and what does not. Appended the decision to `ai-logs/balance-after-claim.md`, as promised.
+- Wrote no code. `npx tsc --noEmit` exits 0, and I ran no git commands.
+
+Files changed: `NOTES.md` (new), `README.md`, `ai-logs/balance-after-claim.md`, `ai-logs/session-log.md`
+
+Suggested commit: `docs: add NOTES.md and README.md`

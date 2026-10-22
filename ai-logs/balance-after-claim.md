@@ -245,3 +245,7 @@ claimcheck
 ```
 
 The step 4 replay and the way to read the output are unchanged from the follow-up above.
+
+## Decision
+
+Approach A is shipped: the balance shows the server snapshot as it is, and the claim screen says the claim is in progress and that the balance catches up within about 15 seconds. The AI recommended approach C (the timestamp overlay). It was not built because it rests on two assumptions that were not verified (a snapshot includes every claim created before its `asOf`, and `updatedAt` is the settle time), and there was no time left. Approach C is the first item under "Next steps" in `NOTES.md`. Approach B was avoided because it causes the second user complaint (the balance drops and then jumps back up). Approach A leaves the first complaint possible for up to 15 seconds.
