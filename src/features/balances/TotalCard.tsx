@@ -1,9 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { AmountRow } from '@/components/AmountRow';
 import { formatUsd, type BalanceTotals } from '@/lib/money';
 import { colors, fontSize, radius, spacing } from '@/theme';
-
-import { AmountRow } from './AmountRow';
 
 // `totals` is null when an API value could not be read; we show a dash, never a wrong number.
 export function TotalCard({ totals }: { totals: BalanceTotals | null }) {

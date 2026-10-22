@@ -9,11 +9,14 @@ interface ButtonProps {
   onPress: () => void;
   variant?: Variant;
   disabled?: boolean;
+  /** Use when the visible label is ambiguous on its own, e.g. several "Claim" buttons. */
+  accessibilityLabel?: string;
 }
 
-export function Button({ label, onPress, variant = 'primary', disabled = false }: ButtonProps) {
+export function Button({ label, onPress, variant = 'primary', disabled = false, accessibilityLabel }: ButtonProps) {
   return (
     <Pressable
+      accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
       accessibilityState={{ disabled }}
       disabled={disabled}

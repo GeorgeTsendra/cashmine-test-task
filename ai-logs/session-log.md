@@ -677,3 +677,64 @@ Response:
 Files changed: `ai-logs/balance-after-claim.md`, `ai-logs/session-log.md`
 
 Suggested commit: `docs: record claim check findings and rate limit`
+
+## 22:22 — Commit 5: claim form with fee preview, validation and confirm
+
+Prompt:
+
+```text
+Yes. I'll run the corrected check myself and paste the output. Start commit 5 now: the claim form with fee preview, validation and confirm.
+```
+
+Response:
+
+- Built the claim form at `/claim?asset=…`. It has an asset picker taken from the balances, an amount field with Max, live validation through the money library with a specific message for each rule, a fee, minimum and "You receive" preview, the destination (shown when there is one, a picker when there are several), and a Review button that opens a confirm dialog. Each asset card on Home now has a Claim button that is disabled when nothing is available.
+- The Confirm button only closes the dialog for now. Submitting the claim is commit 6, as planned.
+- Tested in the browser at 375px with the API mocked in the page, using values from your real run (USDT, BTC and ETH, `dest_exchange`). The messages for bad format, below minimum, too many decimals and above available all showed, and Review stayed disabled until the amount was valid. Max filled 870.533207 and the receive amount showed 869.033207. The ETH balance with 18 decimals displayed exactly and ETH offered two destinations. A failing claim-options request showed an error with Retry after three attempts. Cancel closed the dialog.
+- Because of the rate limit you found, claim options are cached for 60 s and balances for 10 s. Opening the claim screen from Home had made a second balances request within 2 s. I also fixed a small overflow of the Max button.
+- Small additions: the shared `AmountRow` moved to `src/components`, `Button` got an optional `accessibilityLabel`, and `isPositive` got a test. `npx tsc --noEmit` exits 0 and `npm test` shows 72 passed. I ran no git commands.
+- Not verified: responses with your real token, the on-screen keyboard on a real phone, and anything after Confirm.
+
+Files changed: `src/app/claim.tsx`, `src/app/_layout.tsx`, `src/components/AmountRow.tsx`, `src/components/Button.tsx`, `src/features/claim/` (AmountField, ChoicePicker, ClaimForm, ClaimView, ConfirmModal, keys, messages, useClaimOptions), `src/features/balances/` (BalanceCard, TotalCard, useBalances, AmountRow removed), `src/lib/money.ts`, `src/lib/money.test.ts`, `ai-logs/session-log.md`
+
+Suggested commit: `feat: add claim form with fee preview, validation and confirm dialog`
+
+## 22:25 — Fix: claim-options requests canceled when switching assets
+
+Prompt:
+
+```text
+Move the request to https://task-api.cashmine.io/v1/claim-options to a higher level (e.g., the view-model or a shared state layer) so that it doesn't switch to a "canceled" state when tabs are toggled.
+```
+
+Response:
+
+- Found the cause in React Query's source. Each asset's form was keyed by asset and owned its own claim-options query, so switching assets unmounted it. React Query cancels a request when its last observer goes away and the query function read the abort signal (`query.js`, `abortSignalConsumed`), and the browser shows that as "canceled".
+- Moved the requests up to `ClaimView`, which stays mounted while you switch assets. A new `useClaimOptionsByAsset(active, visited)` hook uses `useQueries` for the active asset plus every asset visited before, and `ClaimForm` now receives the query result as a prop. Only visited assets are requested, so the rate limit is not hit by prefetching all of them. The options request also no longer takes the caller's abort signal, because a cancelled request still counts against the rate limit.
+- Tested in the browser at 375px with the API mocked and options made slow (6 s). I switched BTC, ETH and BTC again while the first requests were in flight: exactly one request per asset, none cancelled, both finished, and the form showed the data. Switching to ETH afterwards showed cached data with no new request. I did not reproduce the old cancelled state in the browser; the cause rests on the source.
+- `npx tsc --noEmit` exits 0 and `npm test` shows 72 passed. I ran no git commands.
+
+Files changed: `src/features/claim/useClaimOptionsByAsset.ts` (new, replaces `useClaimOptions.ts`), `src/features/claim/ClaimView.tsx`, `src/features/claim/ClaimForm.tsx`, `ai-logs/session-log.md`
+
+Suggested commit: `fix: own claim-options queries in ClaimView so switching assets never cancels them`
+
+## 22:32 — Commit 6: submit the claim safely and track it
+
+Prompt:
+
+```text
+Start commit 6: submit the claim with an idempotency key, handle an unknown outcome by replaying the same key, and track the claim until it completes or fails.
+```
+
+Response:
+
+- Built the submit flow. Confirming a claim creates one Idempotency-Key (a UUID, with a fallback for plain HTTP) for that exact request, and every send of it carries the same key and body. React Query replays automatically (twice, honoring `retryAfterMs`) when the outcome is unknown: no answer, a timeout, a 5xx, or a 429. After that the dialog says the claim may already be in progress, offers "Check again" (the same request again), and a Close that leaves an "unconfirmed claim" banner with "Check status". A definite 400, 404 or 409 ends the attempt and shows the server's message.
+- The attempt (key and body) is stored in AsyncStorage before sending, so a reload can replay it, and it is removed on success, on a definite error, and whenever the token changes or is rejected, because replaying it under another token would create a new claim. Editing the amount makes a new request with a new key.
+- Built the tracking screen at `/claims/[id]`: it polls every 4 s (the API rate-limits aggressively) while the claim is pending, then shows completed or failed with the reason and where the money went, refreshes the balances once, and offers "Back to balances" and, after a failure, "Try again". Until the balance overlay exists, it tells the user the balance catches up within about 15 s.
+- Tested in the browser at 375px with a mock API that can lose responses and go down. A lost response (the mock created the claim, then answered 504) produced two sends with the same key, exactly one claim, and the tracking screen, which went from "in progress" to "completed". An outage produced three sends with the same key, the "couldn't confirm" dialog, the stored attempt, then the banner after Close. When the server came back, "Check status" sent the same key a fourth time and created exactly one claim.
+- `npx tsc --noEmit` exits 0 and `npm test` shows 75 passed (3 new tests for the key helper). I ran no git commands.
+- Not verified: the "rejected" dialog in the browser, a real page reload with a stored attempt (only the stored value and its removal were checked, because the mock cannot survive a reload), and everything with your real token. The balance overlay (approach C) is not built.
+
+Files changed: `src/app/claims/[id].tsx`, `src/app/_layout.tsx`, `src/app/index.tsx`, `src/features/claim/` (ClaimForm, ClaimView, ConfirmModal, ClaimStatusView, PendingAttemptBanner, useClaim, useSubmitClaim, keys), `src/features/auth/TokenProvider.tsx`, `src/lib/storage.ts`, `src/lib/uuid.ts`, `src/lib/uuid.test.ts`, `src/types.ts`, `src/theme.ts`, `ai-logs/session-log.md`
+
+Suggested commit: `feat: submit claims with idempotent replay and track their status`

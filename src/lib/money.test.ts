@@ -7,6 +7,7 @@ import {
   formatAmountString,
   formatDecimal,
   formatUsd,
+  isPositive,
   multiply,
   parseAmount,
   parseDecimal,
@@ -100,6 +101,17 @@ describe('formatDecimal', () => {
     expect(formatDecimal(dec('1234567.89'), true)).toBe('1,234,567.89');
     expect(formatDecimal(dec('999'), true)).toBe('999');
     expect(formatDecimal(dec('1000'), true)).toBe('1,000');
+  });
+});
+
+describe('isPositive', () => {
+  it('is true only for readable amounts above zero', () => {
+    expect(isPositive('0.000001')).toBe(true);
+    expect(isPositive('12.365678901234591676')).toBe(true);
+    expect(isPositive('0')).toBe(false);
+    expect(isPositive('0.0')).toBe(false);
+    expect(isPositive('-1')).toBe(false);
+    expect(isPositive('abc')).toBe(false);
   });
 });
 
