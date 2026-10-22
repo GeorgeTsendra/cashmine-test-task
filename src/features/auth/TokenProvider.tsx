@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
 import { setUnauthorizedHandler } from '@/lib/queryClient';
-import { readToken, removeToken, saveToken as persistToken } from '@/lib/storage';
+import { readToken, removeClaimAttempt, removeToken, saveToken as persistToken } from '@/lib/storage';
 
 type AuthStatus = 'loading' | 'ready';
 
@@ -46,6 +46,7 @@ export function TokenProvider({ children }: { children: ReactNode }) {
       setToken(null);
       queryClient.clear();
       void removeToken();
+      void removeClaimAttempt();
     });
     return () => setUnauthorizedHandler(null);
   }, [queryClient]);
@@ -54,6 +55,8 @@ export function TokenProvider({ children }: { children: ReactNode }) {
     const trimmed = value.trim();
     setNotice(null);
     queryClient.clear();
+    // A stored claim request belongs to the previous token; replaying it under a new one would create a new claim.
+    void removeClaimAttempt();
     setToken(trimmed);
     try {
       await persistToken(trimmed);
@@ -66,6 +69,7 @@ export function TokenProvider({ children }: { children: ReactNode }) {
     setNotice(null);
     setToken(null);
     queryClient.clear();
+    void removeClaimAttempt();
     await removeToken();
   }
 

@@ -116,6 +116,12 @@ export interface Claim extends CreateClaimBody {
   updatedAt: IsoDateString;
 }
 
+/** A claim request that may have reached the server. Replaying the same key and body never creates a second claim. */
+export interface ClaimAttempt {
+  key: string;
+  body: CreateClaimBody;
+}
+
 export interface CreateClaimResult {
   claim: Claim;
   /** True when the server returned the original claim for a repeated Idempotency-Key (header `Idempotent-Replayed: true`). */

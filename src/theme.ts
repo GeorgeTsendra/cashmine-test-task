@@ -8,6 +8,8 @@ export const colors = {
   primaryText: '#FFFFFF',
   danger: '#C62828',
   dangerBackground: '#FDECEA',
+  success: '#1B7F3B',
+  successBackground: '#E6F4EA',
   warning: '#8A5A00',
   warningBackground: '#FFF4D6',
 } as const;

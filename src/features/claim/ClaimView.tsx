@@ -7,6 +7,7 @@ import { spacing } from '@/theme';
 
 import { ChoicePicker } from './ChoicePicker';
 import { ClaimForm } from './ClaimForm';
+import { PendingAttemptBanner } from './PendingAttemptBanner';
 import { useClaimOptionsByAsset } from './useClaimOptionsByAsset';
 
 // Picks the asset (from the balances) and shows the claim form for it. This component owns the
@@ -26,28 +27,31 @@ export function ClaimView({ initialAsset }: { initialAsset?: string }) {
   }
 
   return (
-    <QueryState
-      query={balances}
-      isEmpty={(data) => data.items.length === 0}
-      loadingLabel="Loading balances…"
-      emptyTitle="Nothing to claim yet"
-      emptyMessage="Your balances will appear here once you have earned payback."
-    >
-      {(data) => {
-        const item = data.items.find((i) => i.asset === active) ?? data.items[0];
-        return (
-          <View style={styles.stack}>
-            <ChoicePicker
-              label="Asset"
-              choices={data.items.map((i) => ({ value: i.asset, label: i.asset }))}
-              selected={item.asset}
-              onSelect={selectAsset}
-            />
-            <ClaimForm key={item.asset} item={item} options={optionsByAsset[item.asset]} />
-          </View>
-        );
-      }}
-    </QueryState>
+    <View style={styles.stack}>
+      <PendingAttemptBanner />
+      <QueryState
+        query={balances}
+        isEmpty={(data) => data.items.length === 0}
+        loadingLabel="Loading balances…"
+        emptyTitle="Nothing to claim yet"
+        emptyMessage="Your balances will appear here once you have earned payback."
+      >
+        {(data) => {
+          const item = data.items.find((i) => i.asset === active) ?? data.items[0];
+          return (
+            <View style={styles.stack}>
+              <ChoicePicker
+                label="Asset"
+                choices={data.items.map((i) => ({ value: i.asset, label: i.asset }))}
+                selected={item.asset}
+                onSelect={selectAsset}
+              />
+              <ClaimForm key={item.asset} item={item} options={optionsByAsset[item.asset]} />
+            </View>
+          );
+        }}
+      </QueryState>
+    </View>
   );
 }
 

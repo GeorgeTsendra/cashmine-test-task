@@ -4,6 +4,7 @@ import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { useToken } from '@/features/auth/TokenProvider';
 import { BalancesView } from '@/features/balances/BalancesView';
+import { PendingAttemptBanner } from '@/features/claim/PendingAttemptBanner';
 import { colors, fontSize, spacing } from '@/theme';
 
 export default function HomeScreen() {
@@ -17,6 +18,7 @@ export default function HomeScreen() {
         </Text>
         <Button label="Change token" variant="link" onPress={() => void clearToken()} />
       </View>
+      <PendingAttemptBanner />
       <BalancesView />
     </Screen>
   );

@@ -1,18 +1,21 @@
 import type { UseQueryResult } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AmountRow } from '@/components/AmountRow';
 import { Button } from '@/components/Button';
 import { QueryState } from '@/components/QueryState';
+import { describeError } from '@/lib/errors';
 import { formatAmountString, formatDecimal, isPositive, parseDecimal, validateClaimAmount } from '@/lib/money';
+import { newIdempotencyKey } from '@/lib/uuid';
 import { colors, fontSize, radius, spacing } from '@/theme';
-import type { BalanceItem, ClaimOptions } from '@/types';
+import type { BalanceItem, ClaimAttempt, ClaimOptions } from '@/types';
 
 import { AmountField } from './AmountField';
 import { ChoicePicker } from './ChoicePicker';
-import { ConfirmModal } from './ConfirmModal';
+import { ConfirmModal, type ConfirmPhase } from './ConfirmModal';
 import { describeAmountError } from './messages';
+import { mayBeInFlight, useSubmitClaim } from './useSubmitClaim';
 
 // The options query is owned by ClaimView, so remounting this form on an asset switch cannot cancel it.
 export function ClaimForm({ item, options }: { item: BalanceItem; options: UseQueryResult<ClaimOptions> }) {
@@ -34,12 +37,37 @@ function ClaimFormBody({ item, options }: { item: BalanceItem; options: ClaimOpt
   const [amount, setAmount] = useState('');
   const [destinationId, setDestinationId] = useState(options.destinations[0]?.id ?? '');
   const [confirming, setConfirming] = useState(false);
+  const submit = useSubmitClaim();
+  // The request being sent. Confirming the same claim again reuses its Idempotency-Key, so a retry can never double-claim.
+  const attempt = useRef<ClaimAttempt | null>(null);
 
   const rules = { decimals: item.decimals, minAmount: options.minAmount, available: item.available, fee: options.fee };
   const result = validateClaimAmount(amount, rules);
   const destination = options.destinations.find((d) => d.id === destinationId);
   const error = result.ok || result.error === 'EMPTY' ? null : describeAmountError(result.error, { asset, ...rules });
   const unit = (value: string) => `${formatAmountString(value)} ${asset}`;
+
+  const phase: ConfirmPhase = submit.isPending
+    ? 'submitting'
+    : submit.isError
+      ? mayBeInFlight(submit.error)
+        ? 'unknown'
+        : 'rejected'
+      : 'confirm';
+
+  function confirm() {
+    if (!result.ok || destination === undefined) return;
+    const body = { asset, amount: formatDecimal(result.amount), destinationId: destination.id };
+    const current = attempt.current;
+    const next = current && JSON.stringify(current.body) === JSON.stringify(body) ? current : { key: newIdempotencyKey(), body };
+    attempt.current = next;
+    submit.mutate(next);
+  }
+
+  function close() {
+    submit.reset();
+    setConfirming(false);
+  }
 
   return (
     <View style={styles.stack}>
@@ -79,14 +107,15 @@ function ClaimFormBody({ item, options }: { item: BalanceItem; options: ClaimOpt
       {result.ok && destination !== undefined && (
         <ConfirmModal
           visible={confirming}
+          phase={phase}
+          message={submit.isError ? describeError(submit.error) : null}
           asset={asset}
           amount={formatDecimal(result.amount, true)}
           fee={formatAmountString(options.fee)}
           receive={formatDecimal(result.receive, true)}
           destination={destination.label}
-          onCancel={() => setConfirming(false)}
-          // Submitting the claim comes with the next commit.
-          onConfirm={() => setConfirming(false)}
+          onCancel={close}
+          onConfirm={confirm}
         />
       )}
     </View>
