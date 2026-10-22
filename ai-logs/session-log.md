@@ -474,3 +474,24 @@ Response:
 Files changed: `package.json`, `package-lock.json`, `app.json`, `public/_redirects`, `src/theme.ts`, `src/lib/storage.ts`, `src/features/auth/TokenProvider.tsx`, `src/components/Screen.tsx`, `src/components/Button.tsx`, `src/app/_layout.tsx`, `src/app/token.tsx`, `src/app/index.tsx`, `.claude/launch.json`, `ai-logs/session-log.md`
 
 Suggested commit: `feat: token gate with AsyncStorage, SPA web output and theme`
+
+## 21:46 — Commit 3: money utilities with unit tests
+
+Prompt:
+
+```text
+Start commit 3: money utilities with unit tests (install jest-expo, jest and ＠types/jest as part of it).
+```
+
+Response:
+
+- Installed `jest-expo`, `jest` and `@types/jest` as dev dependencies with `npx expo install ... --dev` (the real ASCII package name, not the fullwidth "＠"), as the SDK 58 docs describe. Added a `test` script and a `jest` config in `package.json`: the `jest-expo` preset plus a mapper for the `@/` alias.
+- Wrote `src/lib/money.ts` with exact decimal math on `bigint` (no floats and no library): strict parsing of the API's amount format, `formatDecimal`, add/subtract/multiply/compare, USD rounding, `balanceTotalsUsd` (available + pending + claiming) and `validateClaimAmount`. The choices to explain in NOTES: decimal places are counted as written ("0.5000000" has 7), USD is rounded once at display (ties away from zero) and never per asset, a malformed value makes the totals `null` instead of a wrong number, and the amount after the fee must be positive (our own rule).
+- Wrote 66 unit tests in `src/lib/money.test.ts` covering parsing, validation, fee and totals. Expected values for the totals and rounding cases came from an independent Python `decimal` calculation. I also broke the code on purpose twice (a tie-rounding change and a minimum-amount boundary change); the tests failed both times, and I restored the file (diffed identical).
+- `npx tsc --noEmit` first failed with "Cannot find name 'describe'", although the tests passed: TypeScript 6 no longer loads `@types/*` automatically. I added `"types": ["jest"]` to `tsconfig.json`; `tsc` now exits 0 and `npm test` shows 66 passed.
+- npm printed a warning that `unrs-resolver` and `@parcel/watcher` have install scripts not covered by `allowScripts`. The tests run fine, and I did not run `npm approve-scripts` because it changes npm config.
+- Not checked: BigInt on native Hermes (the app ships web only, and I used `BigInt()` calls without literals), and the library is not used by any screen yet. I ran no git commands.
+
+Files changed: `package.json`, `package-lock.json`, `tsconfig.json`, `src/lib/money.ts`, `src/lib/money.test.ts`, `ai-logs/session-log.md`
+
+Suggested commit: `feat: add exact decimal money utilities with unit tests`
