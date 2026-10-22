@@ -536,3 +536,144 @@ Response:
 Files changed: `ai-logs/balance-after-claim.md` (new), `ai-logs/session-log.md`
 
 Suggested commit: `docs: add balance-after-claim approaches conversation`
+
+## 22:08 — Stress-testing approach C: what if its two assumptions are wrong?
+
+Prompt:
+
+```text
+Before we commit to C: you said it rests on two assumptions you can't confirm from the docs. What exactly breaks for the user if each one is wrong? And can we verify both right now with one smallest claim and a couple of balance refetches? Give me the exact steps
+```
+
+Response:
+
+- Answered what breaks for each assumption, in both directions. The overlay is display-only and the server checks `available` live, so a wrong assumption never moves money wrongly. It shows a wrong number for at most one snapshot cycle (15 s) per claim. The two worst visible cases are a snapshot that lags (Available jumps back up, so complaint 2 returns) and an `updatedAt` that is later than the real settle time (phantom money in Available after a failed claim).
+- Pushed back on "a couple of balance refetches". One smallest claim is enough, but the boundary sits inside one 15 s cycle, so the check needs about one balance poll per second for about 1.5 minutes. One run gives bounds, not proof, and the script sends the claim about 12 s after a new snapshot so the lag bound is tight (about 1 to 3 s).
+- Wrote the exact steps and tested them before handing them over, against a local mock of the API in interactive zsh. The test caught that an inline `#` comment breaks a pasted loop in zsh, which I removed. The valid mock produced the PASS pattern and a deliberately lagging mock produced the FAIL pattern. They have not run against the real API, and I did not use your token.
+- Saved the follow-up (the failure table, the five steps, how to read the output, and the fallback if either assumption fails) in `ai-logs/balance-after-claim.md`. This exchange is a candidate for the "pushed back" moment in NOTES.md.
+- `npx tsc --noEmit` exit 0; I ran no git commands.
+
+Files changed: `ai-logs/balance-after-claim.md`, `ai-logs/session-log.md`
+
+Suggested commit: `docs: add overlay assumption check and verification steps`
+
+## 22:17 — First run of the claim check: skipped step, rate limit found
+
+Prompt (three messages in this turn):
+
+```text
+here are the results (skip server unavailable error)
+
+"
+
+<pasted_content id="321e">
+george@MacBook-Pro-koristuvac cashmine-test-task % read -rs "CM_TOKEN?Token (hidden): "; echo; export CM_TOKEN
+B=https://task-api.cashmine.io
+api() { curl -sS -m 15 -H "Authorization: Bearer $CM_TOKEN" "$@"; }
+Token (hidden): 
+george@MacBook-Pro-koristuvac cashmine-test-task % api "$B/v1/balances" | jq -r '.items[] | [.asset, .available, .usdPrice] | @tsv' | while IFS=$'\t' read -r a av p; do
+  api "$B/v1/claim-options?asset=$a" | jq -r --arg a "$a" --arg av "$av" --arg p "$p" \
+    '[$a, "available=" + $av, "min=" + .minAmount, "fee=" + .fee, "minUSD~" + (((.minAmount|tonumber) * ($p|tonumber) * 100 | round / 100) | tostring), "dest=" + .destinations[0].id] | join("  ")'
+done
+USDT  available=870.533207  min=10  fee=1.5  minUSD~10  dest=dest_exchange
+BTC  available=0.01246567  min=0.0005  fee=0.00002  minUSD~33.66  dest=dest_exchange
+ETH  available=12.365678901234591676  min=0.01  fee=0.0012  minUSD~24.61  dest=dest_exchange
+george@MacBook-Pro-koristuvac cashmine-test-task % K=$(uuidgen); CLAIM=""; LB=""; LC=""; PREV=""; SENT=0
+BODY="{\"asset\":\"$ASSET\",\"amount\":\"$AMOUNT\",\"destinationId\":\"$DEST\"}"
+snap() { api "$B/v1/balances" | jq -c --arg a "$ASSET" 'if .items then {asOf, available: (.items[]|select(.asset==$a)|.available), claiming: (.items[]|select(.asset==$a)|.claiming)} else . end'; }
+for i in $(seq 1 70); do
+  b=$(snap); asof=$(echo "$b" | jq -r '.asOf // empty')
+  [ "$b" != "$LB" ] && echo "$(date -u +%T) BAL $b"; LB=$b
+  if [ "$SENT" = 0 ] && [ -n "$PREV" ] && [ -n "$asof" ] && [ "$asof" != "$PREV" ]; then
+    sleep 12
+    out=$(api -X POST "$B/v1/claims" -H "Idempotency-Key: $K" -H 'Content-Type: application/json' -d "$BODY" -w $'\n%{http_code}')
+    echo "$(date -u +%T) CLAIM http=${out##*$'\n'} ${out%$'\n'*}"
+    CLAIM=$(echo "${out%$'\n'*}" | jq -r '.id // empty'); SENT=1
+  fi
+  [ -n "$asof" ] && PREV=$asof
+  if [ -n "$CLAIM" ]; then
+    c=$(api "$B/v1/claims/$CLAIM" | jq -c 'if .id then {status, createdAt, updatedAt, failureReason} else . end')
+    [ "$c" != "$LC" ] && echo "$(date -u +%T) CLM $c"; LC=$c
+  fi
+  sleep 1
+done
+20:10:17 BAL {"error":{"code":"RATE_LIMITED","message":"Too many requests","retryAfterMs":1749}}
+20:10:19 BAL {"error":{"code":"RATE_LIMITED","message":"Too many requests","retryAfterMs":454}}
+20:10:20 BAL 
+20:10:22 BAL {"error":{"code":"SERVER","message":"Service temporarily unavailable"}}
+20:10:23 BAL 
+20:10:30 BAL {"error":{"code":"RATE_LIMITED","message":"Too many requests","retryAfterMs":87}}
+20:10:32 BAL {"error":{"code":"RATE_LIMITED","message":"Too many requests","retryAfterMs":9}}
+20:10:33 BAL 
+20:10:35 BAL {"error":{"code":"SERVER","message":"Service temporarily unavailable"}}
+20:10:37 BAL 
+20:10:48 BAL {"error":{"code":"RATE_LIMITED","message":"Too many requests","retryAfterMs":477}}
+20:10:50 BAL 
+^C%                                                                                                                                                            
+george@MacBook-Pro-koristuvac cashmine-test-task % api -i -X POST "$B/v1/claims" -H "Idempotency-Key: $K" -H 'Content-Type: application/json' -d "$BODY" | grep -iE '^(HTTP|idempotent-replayed)'
+HTTP/2 400 
+george@MacBook-Pro-koristuvac cashmine-test-task %
+</pasted_content id="321e">
+
+ "
+
+---
+
+yes, i skipped 2 step
+
+---
+
+"
+
+<pasted_content id="321e">
+george@MacBook-Pro-koristuvac cashmine-test-task % ASSET=XXX; AMOUNT=0.00; DEST=dest_xxx
+george@MacBook-Pro-koristuvac cashmine-test-task % api -i -X POST "$B/v1/claims" -H "Idempotency-Key: $K" -H 'Content-Type: application/json' -d "$BODY" | grep -iE '^(HTTP|idempotent-replayed)'
+HTTP/2 400 
+george@MacBook-Pro-koristuvac cashmine-test-task % K=$(uuidgen); CLAIM=""; LB=""; LC=""; PREV=""; SENT=0
+BODY="{\"asset\":\"$ASSET\",\"amount\":\"$AMOUNT\",\"destinationId\":\"$DEST\"}"
+snap() { api "$B/v1/balances" | jq -c --arg a "$ASSET" 'if .items then {asOf, available: (.items[]|select(.asset==$a)|.available), claiming: (.items[]|select(.asset==$a)|.claiming)} else . end'; }
+for i in $(seq 1 70); do
+  b=$(snap); asof=$(echo "$b" | jq -r '.asOf // empty')
+  [ "$b" != "$LB" ] && echo "$(date -u +%T) BAL $b"; LB=$b
+  if [ "$SENT" = 0 ] && [ -n "$PREV" ] && [ -n "$asof" ] && [ "$asof" != "$PREV" ]; then
+    sleep 12
+    out=$(api -X POST "$B/v1/claims" -H "Idempotency-Key: $K" -H 'Content-Type: application/json' -d "$BODY" -w $'\n%{http_code}')
+    echo "$(date -u +%T) CLAIM http=${out##*$'\n'} ${out%$'\n'*}"
+    CLAIM=$(echo "${out%$'\n'*}" | jq -r '.id // empty'); SENT=1
+  fi
+  [ -n "$asof" ] && PREV=$asof
+  if [ -n "$CLAIM" ]; then
+    c=$(api "$B/v1/claims/$CLAIM" | jq -c 'if .id then {status, createdAt, updatedAt, failureReason} else . end')
+    [ "$c" != "$LC" ] && echo "$(date -u +%T) CLM $c"; LC=$c
+  fi
+  sleep 1
+done
+20:13:06 BAL {"error":{"code":"SERVER","message":"Service temporarily unavailable"}}
+20:13:08 BAL 
+20:13:13 BAL {"error":{"code":"RATE_LIMITED","message":"Too many requests","retryAfterMs":370}}
+20:13:15 BAL 
+20:13:24 BAL {"error":{"code":"SERVER","message":"Service temporarily unavailable"}}
+20:13:25 BAL 
+20:13:29 BAL {"error":{"code":"RATE_LIMITED","message":"Too many requests","retryAfterMs":1099}}
+20:13:31 BAL 
+20:13:35 BAL {"error":{"code":"RATE_LIMITED","message":"Too many requests","retryAfterMs":113}}
+20:13:37 BAL 
+20:13:46 BAL {"error":{"code":"RATE_LIMITED","message":"Too many requests","retryAfterMs":1071}}
+20:13:48 BAL
+</pasted_content id="321e">
+
+ ........ ets"
+```
+
+Response:
+
+- Read both runs. Step 2 was skipped the first time, and the second time its placeholder line (`ASSET=XXX; ...`) was run as written. Either way the asset matched nothing in the balances, so no claim was created: the loop never sent one, and the 400 on the replay came from an empty request body. A template line to fill in was my design mistake.
+- Took new facts from your real output: three assets (USDT, BTC, ETH), the destination is `dest_exchange`, and ETH `available` has 18 decimals (`12.365678901234591676`), which the bigint math handles exactly. The cheapest claim by USD is USDT with an amount of 10 (fee 1.5).
+- Found the rate limit is tight. Polling about once a second (about 0.6 requests per second) returned `RATE_LIMITED` every 8 to 10 requests, with `retryAfterMs` from 9 ms to 1.7 s, plus random 503s (skipped as you asked). For the app this means: poll a pending claim every 4 s at most and balances every 5 s at most during an unreconciled claim, honor `retryAfterMs`, and expect 503 on the claim POST, which is the "outcome unknown" case to replay with the same key.
+- Rewrote the check as one self-contained block with the real values. It refuses an unknown asset, polls every 3.5 s, waits `retryAfterMs` after a 429, skips 503s, and retries the claim POST with the same key. I tested it against a mock that rate-limits and randomly returns 503 (up to 40%). It has not run against the real API.
+- Saved the findings and the corrected block in `ai-logs/balance-after-claim.md`. Your message ended with "........ ets"; I could not tell what it meant.
+- `npx tsc --noEmit` exit 0; I ran no git commands.
+
+Files changed: `ai-logs/balance-after-claim.md`, `ai-logs/session-log.md`
+
+Suggested commit: `docs: record claim check findings and rate limit`
