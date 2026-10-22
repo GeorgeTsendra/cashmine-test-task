@@ -1,9 +1,10 @@
 import { useIsMutating } from '@tanstack/react-query';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Button } from '@/components/Button';
+import { Button, ButtonVariant } from '@/components/Button';
 import { describeError } from '@/lib/errors';
 import { formatAmountString } from '@/lib/money';
+import { strings } from '@/strings';
 import { colors, fontSize, radius, spacing } from '@/theme';
 
 import { mayBeInFlight, SUBMIT_CLAIM_KEY, usePendingAttempt, useSubmitClaim } from './useSubmitClaim';
@@ -21,13 +22,12 @@ export function PendingAttemptBanner() {
   return (
     <View style={styles.box}>
       <Text accessibilityRole="alert" style={styles.text}>
-        We could not confirm your claim of {formatAmountString(amount)} {asset}. It may already be in progress.
-        Checking again sends the same request, so it cannot create a second claim.
+        {strings.attempt.banner(formatAmountString(amount), asset)}
       </Text>
       {submit.isError && !mayBeInFlight(submit.error) && <Text style={styles.text}>{describeError(submit.error)}</Text>}
       <Button
-        label={submit.isPending ? 'Checking…' : 'Check status'}
-        variant="secondary"
+        label={submit.isPending ? strings.attempt.checking : strings.attempt.checkStatus}
+        variant={ButtonVariant.Secondary}
         disabled={submit.isPending}
         onPress={() => submit.mutate(attempt)}
       />

@@ -37,11 +37,20 @@ export function parseDecimal(text: string): Decimal | null {
   return SIGNED_PATTERN.test(text) ? toDecimal(text) : null;
 }
 
-export type ParseAmountError = 'EMPTY' | 'FORMAT' | 'TOO_MANY_DECIMALS';
+export enum AmountError {
+  Empty = 'EMPTY',
+  Format = 'FORMAT',
+  TooManyDecimals = 'TOO_MANY_DECIMALS',
+  BelowMin = 'BELOW_MIN',
+  AboveAvailable = 'ABOVE_AVAILABLE',
+  /** What the user would receive after the fee must be above zero. */
+  ReceiveNotPositive = 'RECEIVE_NOT_POSITIVE',
+  RulesUnavailable = 'RULES_UNAVAILABLE',
+}
 
 export type ParseAmountResult =
   | { ok: true; value: Decimal }
-  | { ok: false; error: ParseAmountError };
+  | { ok: false; error: AmountError };
 
 /**
  * Parses an amount typed by the user using the API's rules: digits with an optional dot and
@@ -50,10 +59,10 @@ export type ParseAmountResult =
  */
 export function parseAmount(input: string, decimals: number): ParseAmountResult {
   const text = input.trim();
-  if (text === '') return { ok: false, error: 'EMPTY' };
-  if (!AMOUNT_PATTERN.test(text)) return { ok: false, error: 'FORMAT' };
+  if (text === '') return { ok: false, error: AmountError.Empty };
+  if (!AMOUNT_PATTERN.test(text)) return { ok: false, error: AmountError.Format };
   const value = toDecimal(text);
-  if (value.scale > decimals) return { ok: false, error: 'TOO_MANY_DECIMALS' };
+  if (value.scale > decimals) return { ok: false, error: AmountError.TooManyDecimals };
   return { ok: true, value };
 }
 
@@ -172,16 +181,9 @@ export function balanceTotalsUsd(items: readonly BalanceItem[]): BalanceTotals |
   return { ...totals, total: sum([totals.available, totals.pending, totals.claiming]) };
 }
 
-export type ClaimAmountError =
-  | ParseAmountError
-  | 'BELOW_MIN'
-  | 'ABOVE_AVAILABLE'
-  | 'RECEIVE_NOT_POSITIVE'
-  | 'RULES_UNAVAILABLE';
-
 export type ClaimAmountResult =
   | { ok: true; amount: Decimal; receive: Decimal }
-  | { ok: false; error: ClaimAmountError };
+  | { ok: false; error: AmountError };
 
 export interface ClaimAmountRules {
   /** Max decimal places for the asset. */
@@ -202,12 +204,12 @@ export function validateClaimAmount(input: string, rules: ClaimAmountRules): Cla
   const min = parseDecimal(rules.minAmount);
   const available = parseDecimal(rules.available);
   const fee = parseDecimal(rules.fee);
-  if (!min || !available || !fee) return { ok: false, error: 'RULES_UNAVAILABLE' };
+  if (!min || !available || !fee) return { ok: false, error: AmountError.RulesUnavailable };
 
   const amount = parsed.value;
-  if (compare(amount, min) < 0) return { ok: false, error: 'BELOW_MIN' };
-  if (compare(amount, available) > 0) return { ok: false, error: 'ABOVE_AVAILABLE' };
+  if (compare(amount, min) < 0) return { ok: false, error: AmountError.BelowMin };
+  if (compare(amount, available) > 0) return { ok: false, error: AmountError.AboveAvailable };
   const receive = subtract(amount, fee);
-  if (receive.units <= ZERO) return { ok: false, error: 'RECEIVE_NOT_POSITIVE' };
+  if (receive.units <= ZERO) return { ok: false, error: AmountError.ReceiveNotPositive };
   return { ok: true, amount, receive };
 }

@@ -2,18 +2,22 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 
 import { colors, fontSize, MIN_TAP, radius, spacing } from '@/theme';
 
-type Variant = 'primary' | 'secondary' | 'link';
+export enum ButtonVariant {
+  Primary = 'primary',
+  Secondary = 'secondary',
+  Link = 'link',
+}
 
 interface ButtonProps {
   label: string;
   onPress: () => void;
-  variant?: Variant;
+  variant?: ButtonVariant;
   disabled?: boolean;
   /** Use when the visible label is ambiguous on its own, e.g. several "Claim" buttons. */
   accessibilityLabel?: string;
 }
 
-export function Button({ label, onPress, variant = 'primary', disabled = false, accessibilityLabel }: ButtonProps) {
+export function Button({ label, onPress, variant = ButtonVariant.Primary, disabled = false, accessibilityLabel }: ButtonProps) {
   return (
     <Pressable
       accessibilityLabel={accessibilityLabel}
@@ -75,5 +79,13 @@ const styles = StyleSheet.create({
   },
 });
 
-const containerStyles = { primary: styles.primary, secondary: styles.secondary, link: styles.link };
-const labelStyles = { primary: styles.primaryLabel, secondary: styles.secondaryLabel, link: styles.linkLabel };
+const containerStyles = {
+  [ButtonVariant.Primary]: styles.primary,
+  [ButtonVariant.Secondary]: styles.secondary,
+  [ButtonVariant.Link]: styles.link,
+};
+const labelStyles = {
+  [ButtonVariant.Primary]: styles.primaryLabel,
+  [ButtonVariant.Secondary]: styles.secondaryLabel,
+  [ButtonVariant.Link]: styles.linkLabel,
+};

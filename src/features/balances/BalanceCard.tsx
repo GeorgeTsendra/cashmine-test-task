@@ -2,8 +2,9 @@ import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AmountRow } from '@/components/AmountRow';
-import { Button } from '@/components/Button';
+import { Button, ButtonVariant } from '@/components/Button';
 import { balanceTotalsUsd, formatAmountString, formatUsd, isPositive } from '@/lib/money';
+import { strings } from '@/strings';
 import { colors, fontSize, radius, spacing } from '@/theme';
 import type { BalanceItem } from '@/types';
 
@@ -20,14 +21,14 @@ export function BalanceCard({ item }: { item: BalanceItem }) {
         </Text>
         <Text style={styles.usd}>{usd ? formatUsd(usd.total) : '—'}</Text>
       </View>
-      <AmountRow label="Available" value={amount(item.available)} strong />
-      <AmountRow label="Pending" value={amount(item.pending)} />
-      <AmountRow label="Claiming" value={amount(item.claiming)} />
+      <AmountRow label={strings.common.available} value={amount(item.available)} strong />
+      <AmountRow label={strings.common.pending} value={amount(item.pending)} />
+      <AmountRow label={strings.common.claiming} value={amount(item.claiming)} />
       <View style={styles.action}>
         <Button
-          label="Claim"
-          accessibilityLabel={`Claim ${item.asset}`}
-          variant="secondary"
+          label={strings.common.claim}
+          accessibilityLabel={strings.balances.claimAsset(item.asset)}
+          variant={ButtonVariant.Secondary}
           disabled={!isPositive(item.available)}
           onPress={() => router.push({ pathname: '/claim', params: { asset: item.asset } })}
         />

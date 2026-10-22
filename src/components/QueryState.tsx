@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
-import { Button } from '@/components/Button';
+import { Button, ButtonVariant } from '@/components/Button';
 import { describeError } from '@/lib/errors';
+import { strings } from '@/strings';
 import { colors, fontSize, radius, spacing } from '@/theme';
 
 // The part of a React Query result that QueryState needs.
@@ -31,8 +32,8 @@ export function QueryState<T>({
   query,
   children,
   isEmpty,
-  loadingLabel = 'Loading…',
-  emptyTitle = 'Nothing here yet',
+  loadingLabel = strings.query.loading,
+  emptyTitle = strings.query.emptyTitle,
   emptyMessage,
 }: QueryStateProps<T>) {
   const { data, error, isPending, isError, isFetching, refetch } = query;
@@ -54,7 +55,7 @@ export function QueryState<T>({
   return (
     <View style={styles.stack}>
       {isError && (
-        <ErrorBox message={`Couldn't refresh. ${describeError(error)}`} onRetry={retry} retrying={isFetching} />
+        <ErrorBox message={strings.query.refreshFailed(describeError(error))} onRetry={retry} retrying={isFetching} />
       )}
       {isEmpty?.(data) ? (
         <View style={styles.center}>
@@ -76,7 +77,7 @@ function ErrorBox({ message, onRetry, retrying }: { message: string; onRetry: ()
       <Text accessibilityRole="alert" style={styles.errorText}>
         {message}
       </Text>
-      <Button label={retrying ? 'Retrying…' : 'Retry'} onPress={onRetry} disabled={retrying} variant="secondary" />
+      <Button label={retrying ? strings.common.retrying : strings.common.retry} onPress={onRetry} disabled={retrying} variant={ButtonVariant.Secondary} />
     </View>
   );
 }

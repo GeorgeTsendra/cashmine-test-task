@@ -1,6 +1,7 @@
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { Button } from '@/components/Button';
+import { Button, ButtonVariant } from '@/components/Button';
+import { strings } from '@/strings';
 import { colors, fontSize, MIN_TAP, radius, spacing } from '@/theme';
 
 interface AmountFieldProps {
@@ -15,22 +16,22 @@ interface AmountFieldProps {
 export function AmountField({ asset, value, onChangeText, onMax, maxDisabled, error }: AmountFieldProps) {
   return (
     <View style={styles.field}>
-      <Text style={styles.label}>Amount</Text>
+      <Text style={styles.label}>{strings.common.amount}</Text>
       <View style={[styles.inputRow, error !== null && styles.inputRowError]}>
         <TextInput
-          accessibilityLabel={`Amount in ${asset}`}
+          accessibilityLabel={strings.claim.amountIn(asset)}
           autoCapitalize="none"
           autoComplete="off"
           autoCorrect={false}
           inputMode="decimal"
           onChangeText={onChangeText}
-          placeholder="0"
+          placeholder={strings.claim.amountPlaceholder}
           placeholderTextColor={colors.textMuted}
           style={styles.input}
           value={value}
         />
         <Text style={styles.unit}>{asset}</Text>
-        <Button label="Max" variant="link" disabled={maxDisabled} onPress={onMax} accessibilityLabel={`Use the maximum ${asset} amount`} />
+        <Button label={strings.claim.max} variant={ButtonVariant.Link} disabled={maxDisabled} onPress={onMax} accessibilityLabel={strings.claim.useMax(asset)} />
       </View>
       {error !== null && (
         <Text accessibilityRole="alert" style={styles.error}>

@@ -33,7 +33,26 @@ export interface BalancesResponse {
 
 // --- GET /v1/activity ---
 
-export type ClaimStatus = 'pending' | 'completed' | 'failed';
+export enum ClaimStatus {
+  Pending = 'pending',
+  Completed = 'completed',
+  Failed = 'failed',
+}
+
+export enum AccrualStatus {
+  Pending = 'pending',
+  Confirmed = 'confirmed',
+}
+
+export enum ReversalStatus {
+  Confirmed = 'confirmed',
+}
+
+export enum ActivityType {
+  Accrual = 'accrual',
+  Reversal = 'reversal',
+  Claim = 'claim',
+}
 
 interface ActivityBase {
   id: string;
@@ -44,23 +63,23 @@ interface ActivityBase {
 }
 
 export interface AccrualActivity extends ActivityBase {
-  type: 'accrual';
-  status: 'pending' | 'confirmed';
+  type: ActivityType.Accrual;
+  status: AccrualStatus;
   /** Where the payback came from. */
   exchange: string;
   relatedId: string | null; // TODO: verify; the docs only show null for accruals
 }
 
 export interface ReversalActivity extends ActivityBase {
-  type: 'reversal';
-  status: 'confirmed';
+  type: ActivityType.Reversal;
+  status: ReversalStatus;
   exchange: string; // TODO: verify; the docs only say exchange is null for claims
   /** Id of the accrual that was taken back. */
   relatedId: string;
 }
 
 export interface ClaimActivity extends ActivityBase {
-  type: 'claim';
+  type: ActivityType.Claim;
   status: ClaimStatus;
   exchange: null;
   /** Claim id for claims created through this API; null for older claims. */
@@ -130,17 +149,15 @@ export interface CreateClaimResult {
 
 // --- Errors ---
 
-export const API_ERROR_CODES = [
-  'VALIDATION',
-  'UNAUTHORIZED',
-  'NOT_FOUND',
-  'IDEMPOTENCY_MISMATCH',
-  'RATE_LIMITED',
-  'SERVER',
-  'TIMEOUT',
-] as const;
-
-export type ApiErrorCode = (typeof API_ERROR_CODES)[number];
+export enum ApiErrorCode {
+  Validation = 'VALIDATION',
+  Unauthorized = 'UNAUTHORIZED',
+  NotFound = 'NOT_FOUND',
+  IdempotencyMismatch = 'IDEMPOTENCY_MISMATCH',
+  RateLimited = 'RATE_LIMITED',
+  Server = 'SERVER',
+  Timeout = 'TIMEOUT',
+}
 
 export interface ApiErrorBody {
   error: {

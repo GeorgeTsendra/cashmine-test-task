@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { QueryState } from '@/components/QueryState';
 import { balanceTotalsUsd } from '@/lib/money';
+import { strings } from '@/strings';
 import { spacing } from '@/theme';
 
 import { BalanceCard } from './BalanceCard';
@@ -20,9 +21,9 @@ export function BalancesView() {
       <QueryState
         query={balances}
         isEmpty={(data) => data.items.length === 0}
-        loadingLabel="Loading balances…"
-        emptyTitle="No payback yet"
-        emptyMessage="Your balances will appear here once you have earned payback."
+        loadingLabel={strings.balances.loading}
+        emptyTitle={strings.balances.emptyTitle}
+        emptyMessage={strings.balances.emptyMessage}
       >
         {(data) => (
           <View style={styles.list}>

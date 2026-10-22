@@ -1,9 +1,10 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { Button } from '@/components/Button';
+import { Button, ButtonVariant } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { ClaimView } from '@/features/claim/ClaimView';
+import { strings } from '@/strings';
 import { colors, fontSize, spacing } from '@/theme';
 
 export default function ClaimScreen() {
@@ -14,12 +15,12 @@ export default function ClaimScreen() {
     <Screen>
       <View style={styles.header}>
         <Button
-          label="‹ Back"
-          variant="link"
+          label={strings.common.back}
+          variant={ButtonVariant.Link}
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
         />
         <Text accessibilityRole="header" style={styles.title}>
-          Claim
+          {strings.claim.title}
         </Text>
       </View>
       <ClaimView initialAsset={asset} />
