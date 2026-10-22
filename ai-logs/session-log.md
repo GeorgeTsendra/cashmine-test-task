@@ -817,3 +817,27 @@ Response:
 Files changed: `NOTES.md` (new), `README.md`, `ai-logs/balance-after-claim.md`, `ai-logs/session-log.md`
 
 Suggested commit: `docs: add NOTES.md and README.md`
+
+## 22:45 — Live link from EAS Hosting
+
+Prompt:
+
+```text
+here are my dep data
+
+Dashboard       https://expo.dev/projects/e0e67130-bfcd-4499-97fa-0187366fd9f0/hosting/deployments
+Deployment URL  https://georgets66-cashmine-test-task--88yp463dry.expo.app
+Production URL  https://georgets66-cashmine-test-task.expo.app
+```
+
+Response:
+
+- Checked the deployed site without a token. The production and deployment URLs both answer 200, and deep links (`/claims/clm_test`, `/token`) also return the app, so the single-page fallback works on EAS Hosting. The build is the current one: it contains the claim-status text, the "Check status" banner, the Idempotency-Key header and the stored claim attempt.
+- Checked the public bundle for secrets: none of the 9 JavaScript chunks contains the token prefix `ct1.`, and the API base URL appears once. I also scanned the repository and its git history for the token: the only match for `ct1.` is a sentence in this log that mentions the prefix, and nothing token-like follows it.
+- Put the production URL in `README.md` as the live link and described the EAS Hosting deployment, keeping the Netlify `_redirects` note for other static hosts.
+- Wrote no code. `npx tsc --noEmit` exits 0. I ran no git commands.
+- (tsc exit 0.)
+
+Files changed: `README.md`, `ai-logs/session-log.md`
+
+Suggested commit: `docs: add live link to README`

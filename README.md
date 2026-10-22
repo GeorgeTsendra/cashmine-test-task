@@ -2,7 +2,7 @@
 
 A slice of the CashMine app: see payback balances and claim them. Built with Expo (React Native), TypeScript and Expo Router, and shipped as a web app for phones.
 
-**Live link:** https://REPLACE-WITH-YOUR-SITE.netlify.app (open it on a phone, about 390 px wide)
+**Live link:** https://georgets66-cashmine-test-task.expo.app (open it on a phone, about 390 px wide)
 
 On first open the app asks for your API token, keeps it in the browser, and lets you change it from the Home screen. The token is never in the code, the repository or the build.
 
@@ -25,7 +25,7 @@ The API base URL is a single constant, `API_BASE_URL` in `src/lib/api.ts`.
 
 ## Deploy
 
-`dist/` is a static single-page app. `public/_redirects` sends every path to `index.html` for Netlify, for example `netlify deploy --dir dist`, or drag `dist/` into Netlify Drop.
+The live build is hosted on EAS Hosting (Expo): https://georgets66-cashmine-test-task.expo.app. `npx expo export -p web` produces `dist/`, a static single-page app, so any static host works. `public/_redirects` sends every path to `index.html` for Netlify, for example `netlify deploy --dir dist`.
 
 ## What works
 
