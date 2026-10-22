@@ -516,3 +516,23 @@ Response:
 Files changed: `src/app/_layout.tsx`, `src/app/index.tsx`, `src/app/token.tsx`, `src/components/Button.tsx`, `src/components/QueryState.tsx`, `src/features/auth/TokenProvider.tsx`, `src/features/balances/` (AmountRow, BalanceCard, BalancesView, Freshness, TotalCard, keys, useBalances), `src/lib/queryClient.ts`, `src/lib/errors.ts`, `src/lib/time.ts`, `src/lib/time.test.ts`, `src/lib/money.ts`, `src/lib/money.test.ts`, `src/theme.ts`, `ai-logs/session-log.md`
 
 Suggested commit: `feat: add balances screen with total, freshness, refresh and 401 handling`
+
+## 21:55 — Balance after a claim: approaches (the brief's required AI conversation)
+
+Prompt:
+
+```text
+Give me at least two approaches for what the balance shows right after a claim is submitted, with pros and cons for each and your recommendation.
+```
+
+Response:
+
+- Gave four approaches with pros and cons: A, snapshot only plus an "in progress" notice; B, naive optimistic update in the query cache; C, an overlay on the snapshot reconciled with server timestamps (`asOf`, `createdAt`, `updatedAt`); D, a "settling" hold that freezes the asset until a newer snapshot arrives. The full text, with the overlay table and a comparison, is in `ai-logs/balance-after-claim.md`.
+- Tied each approach to the two user complaints. A reproduces "my balance didn't change, so I claimed again", and B reproduces "it dropped, then jumped back up", because a stale snapshot overwrites our own number. C and D avoid both, and D delays the number for up to 15 s.
+- Recommended C, plus a visible "Claim in progress" line and a clear message when a claim fails. A stays as the fallback if we are behind at 20:30 UTC. C's two unverified assumptions (a snapshot includes every claim created before its `asOf`, and `updatedAt` is the settle time) can be checked with the first real claim.
+- Wrote no code and asked you to choose. The choice and your reasoning will be appended to `ai-logs/balance-after-claim.md`.
+- `npx tsc --noEmit` exit 0; I ran no git commands.
+
+Files changed: `ai-logs/balance-after-claim.md` (new), `ai-logs/session-log.md`
+
+Suggested commit: `docs: add balance-after-claim approaches conversation`
