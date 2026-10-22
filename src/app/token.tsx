@@ -7,7 +7,7 @@ import { useToken } from '@/features/auth/TokenProvider';
 import { colors, fontSize, MIN_TAP, radius, spacing } from '@/theme';
 
 export default function TokenScreen() {
-  const { saveToken } = useToken();
+  const { saveToken, notice } = useToken();
   const [value, setValue] = useState('');
   const [visible, setVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +32,12 @@ export default function TokenScreen() {
         </Text>
         <Text style={styles.subtitle}>Enter your access token to see and claim your payback.</Text>
       </View>
+
+      {notice !== null && (
+        <Text accessibilityRole="alert" style={styles.notice}>
+          {notice}
+        </Text>
+      )}
 
       <View style={styles.field}>
         <Text style={styles.label}>Access token</Text>
@@ -87,6 +93,13 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: fontSize.md,
     color: colors.textMuted,
+  },
+  notice: {
+    padding: spacing.md,
+    borderRadius: radius.md,
+    fontSize: fontSize.md,
+    color: colors.danger,
+    backgroundColor: colors.dangerBackground,
   },
   field: {
     gap: spacing.sm,

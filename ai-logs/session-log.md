@@ -474,3 +474,206 @@ Response:
 Files changed: `package.json`, `package-lock.json`, `app.json`, `public/_redirects`, `src/theme.ts`, `src/lib/storage.ts`, `src/features/auth/TokenProvider.tsx`, `src/components/Screen.tsx`, `src/components/Button.tsx`, `src/app/_layout.tsx`, `src/app/token.tsx`, `src/app/index.tsx`, `.claude/launch.json`, `ai-logs/session-log.md`
 
 Suggested commit: `feat: token gate with AsyncStorage, SPA web output and theme`
+
+## 21:46 — Commit 3: money utilities with unit tests
+
+Prompt:
+
+```text
+Start commit 3: money utilities with unit tests (install jest-expo, jest and ＠types/jest as part of it).
+```
+
+Response:
+
+- Installed `jest-expo`, `jest` and `@types/jest` as dev dependencies with `npx expo install ... --dev` (the real ASCII package name, not the fullwidth "＠"), as the SDK 58 docs describe. Added a `test` script and a `jest` config in `package.json`: the `jest-expo` preset plus a mapper for the `@/` alias.
+- Wrote `src/lib/money.ts` with exact decimal math on `bigint` (no floats and no library): strict parsing of the API's amount format, `formatDecimal`, add/subtract/multiply/compare, USD rounding, `balanceTotalsUsd` (available + pending + claiming) and `validateClaimAmount`. The choices to explain in NOTES: decimal places are counted as written ("0.5000000" has 7), USD is rounded once at display (ties away from zero) and never per asset, a malformed value makes the totals `null` instead of a wrong number, and the amount after the fee must be positive (our own rule).
+- Wrote 66 unit tests in `src/lib/money.test.ts` covering parsing, validation, fee and totals. Expected values for the totals and rounding cases came from an independent Python `decimal` calculation. I also broke the code on purpose twice (a tie-rounding change and a minimum-amount boundary change); the tests failed both times, and I restored the file (diffed identical).
+- `npx tsc --noEmit` first failed with "Cannot find name 'describe'", although the tests passed: TypeScript 6 no longer loads `@types/*` automatically. I added `"types": ["jest"]` to `tsconfig.json`; `tsc` now exits 0 and `npm test` shows 66 passed.
+- npm printed a warning that `unrs-resolver` and `@parcel/watcher` have install scripts not covered by `allowScripts`. The tests run fine, and I did not run `npm approve-scripts` because it changes npm config.
+- Not checked: BigInt on native Hermes (the app ships web only, and I used `BigInt()` calls without literals), and the library is not used by any screen yet. I ran no git commands.
+
+Files changed: `package.json`, `package-lock.json`, `tsconfig.json`, `src/lib/money.ts`, `src/lib/money.test.ts`, `ai-logs/session-log.md`
+
+Suggested commit: `feat: add exact decimal money utilities with unit tests`
+
+## 21:52 — Commit 4: balances screen
+
+Prompt:
+
+```text
+Start commit 4: the balances screen. You may create QueryState and the balances query hooks.
+```
+
+Response:
+
+- Built the Home screen: a total-balance card (available + pending + claiming in USD, with the three-part breakdown), one card per asset, an "Updated N s ago" freshness line from the snapshot's `asOf`, a Refresh button, and a 15 s auto-refresh that matches the server's snapshot cadence. Created `QueryState` (loading, error with Retry, empty, data), the balances query hook and keys, and a `Button` link variant.
+- Choices to explain: if a refresh fails while data is on screen, the data stays and an error banner with Retry shows above it. A snapshot older than 60 s is marked "may be out of date". Refresh is a button because `RefreshControl` does nothing on web. GET queries retry twice, but only for network, timeout, 429 and 5xx errors, and 429 waits `retryAfterMs`. Any 401 clears the token and the cache and returns to the token screen with a notice.
+- Tested in the browser at 375px with the API mocked inside the page, so your real token was never used. Loading, a first-load failure with Retry, data, a failed refresh with data kept, a stale snapshot, an empty list, a malformed value (the totals show a dash), a 429 message and a 401 all behaved as designed. The USD numbers on screen matched an independent Python `decimal` calculation to the cent.
+- Also tested against the real API with a fake token: one request, a clean 401 (no retries), the token screen with the notice, and storage cleared. This confirms the real browser-to-API path (CORS) works.
+- `npx tsc --noEmit` exits 0 and `npm test` shows 71 passed (5 new tests for `formatAmountString` and `formatAge`). I ran no git commands.
+- Not verified: how the screen renders a real-token response (the `TODO: verify` fields in `src/types.ts` are still open), and clock skew (the age compares the device clock with the server's `asOf`). There is no Claim button yet; it comes with commit 5.
+
+Files changed: `src/app/_layout.tsx`, `src/app/index.tsx`, `src/app/token.tsx`, `src/components/Button.tsx`, `src/components/QueryState.tsx`, `src/features/auth/TokenProvider.tsx`, `src/features/balances/` (AmountRow, BalanceCard, BalancesView, Freshness, TotalCard, keys, useBalances), `src/lib/queryClient.ts`, `src/lib/errors.ts`, `src/lib/time.ts`, `src/lib/time.test.ts`, `src/lib/money.ts`, `src/lib/money.test.ts`, `src/theme.ts`, `ai-logs/session-log.md`
+
+Suggested commit: `feat: add balances screen with total, freshness, refresh and 401 handling`
+
+## 21:55 — Balance after a claim: approaches (the brief's required AI conversation)
+
+Prompt:
+
+```text
+Give me at least two approaches for what the balance shows right after a claim is submitted, with pros and cons for each and your recommendation.
+```
+
+Response:
+
+- Gave four approaches with pros and cons: A, snapshot only plus an "in progress" notice; B, naive optimistic update in the query cache; C, an overlay on the snapshot reconciled with server timestamps (`asOf`, `createdAt`, `updatedAt`); D, a "settling" hold that freezes the asset until a newer snapshot arrives. The full text, with the overlay table and a comparison, is in `ai-logs/balance-after-claim.md`.
+- Tied each approach to the two user complaints. A reproduces "my balance didn't change, so I claimed again", and B reproduces "it dropped, then jumped back up", because a stale snapshot overwrites our own number. C and D avoid both, and D delays the number for up to 15 s.
+- Recommended C, plus a visible "Claim in progress" line and a clear message when a claim fails. A stays as the fallback if we are behind at 20:30 UTC. C's two unverified assumptions (a snapshot includes every claim created before its `asOf`, and `updatedAt` is the settle time) can be checked with the first real claim.
+- Wrote no code and asked you to choose. The choice and your reasoning will be appended to `ai-logs/balance-after-claim.md`.
+- `npx tsc --noEmit` exit 0; I ran no git commands.
+
+Files changed: `ai-logs/balance-after-claim.md` (new), `ai-logs/session-log.md`
+
+Suggested commit: `docs: add balance-after-claim approaches conversation`
+
+## 22:08 — Stress-testing approach C: what if its two assumptions are wrong?
+
+Prompt:
+
+```text
+Before we commit to C: you said it rests on two assumptions you can't confirm from the docs. What exactly breaks for the user if each one is wrong? And can we verify both right now with one smallest claim and a couple of balance refetches? Give me the exact steps
+```
+
+Response:
+
+- Answered what breaks for each assumption, in both directions. The overlay is display-only and the server checks `available` live, so a wrong assumption never moves money wrongly. It shows a wrong number for at most one snapshot cycle (15 s) per claim. The two worst visible cases are a snapshot that lags (Available jumps back up, so complaint 2 returns) and an `updatedAt` that is later than the real settle time (phantom money in Available after a failed claim).
+- Pushed back on "a couple of balance refetches". One smallest claim is enough, but the boundary sits inside one 15 s cycle, so the check needs about one balance poll per second for about 1.5 minutes. One run gives bounds, not proof, and the script sends the claim about 12 s after a new snapshot so the lag bound is tight (about 1 to 3 s).
+- Wrote the exact steps and tested them before handing them over, against a local mock of the API in interactive zsh. The test caught that an inline `#` comment breaks a pasted loop in zsh, which I removed. The valid mock produced the PASS pattern and a deliberately lagging mock produced the FAIL pattern. They have not run against the real API, and I did not use your token.
+- Saved the follow-up (the failure table, the five steps, how to read the output, and the fallback if either assumption fails) in `ai-logs/balance-after-claim.md`. This exchange is a candidate for the "pushed back" moment in NOTES.md.
+- `npx tsc --noEmit` exit 0; I ran no git commands.
+
+Files changed: `ai-logs/balance-after-claim.md`, `ai-logs/session-log.md`
+
+Suggested commit: `docs: add overlay assumption check and verification steps`
+
+## 22:17 — First run of the claim check: skipped step, rate limit found
+
+Prompt (three messages in this turn):
+
+```text
+here are the results (skip server unavailable error)
+
+"
+
+<pasted_content id="321e">
+george@MacBook-Pro-koristuvac cashmine-test-task % read -rs "CM_TOKEN?Token (hidden): "; echo; export CM_TOKEN
+B=https://task-api.cashmine.io
+api() { curl -sS -m 15 -H "Authorization: Bearer $CM_TOKEN" "$@"; }
+Token (hidden): 
+george@MacBook-Pro-koristuvac cashmine-test-task % api "$B/v1/balances" | jq -r '.items[] | [.asset, .available, .usdPrice] | @tsv' | while IFS=$'\t' read -r a av p; do
+  api "$B/v1/claim-options?asset=$a" | jq -r --arg a "$a" --arg av "$av" --arg p "$p" \
+    '[$a, "available=" + $av, "min=" + .minAmount, "fee=" + .fee, "minUSD~" + (((.minAmount|tonumber) * ($p|tonumber) * 100 | round / 100) | tostring), "dest=" + .destinations[0].id] | join("  ")'
+done
+USDT  available=870.533207  min=10  fee=1.5  minUSD~10  dest=dest_exchange
+BTC  available=0.01246567  min=0.0005  fee=0.00002  minUSD~33.66  dest=dest_exchange
+ETH  available=12.365678901234591676  min=0.01  fee=0.0012  minUSD~24.61  dest=dest_exchange
+george@MacBook-Pro-koristuvac cashmine-test-task % K=$(uuidgen); CLAIM=""; LB=""; LC=""; PREV=""; SENT=0
+BODY="{\"asset\":\"$ASSET\",\"amount\":\"$AMOUNT\",\"destinationId\":\"$DEST\"}"
+snap() { api "$B/v1/balances" | jq -c --arg a "$ASSET" 'if .items then {asOf, available: (.items[]|select(.asset==$a)|.available), claiming: (.items[]|select(.asset==$a)|.claiming)} else . end'; }
+for i in $(seq 1 70); do
+  b=$(snap); asof=$(echo "$b" | jq -r '.asOf // empty')
+  [ "$b" != "$LB" ] && echo "$(date -u +%T) BAL $b"; LB=$b
+  if [ "$SENT" = 0 ] && [ -n "$PREV" ] && [ -n "$asof" ] && [ "$asof" != "$PREV" ]; then
+    sleep 12
+    out=$(api -X POST "$B/v1/claims" -H "Idempotency-Key: $K" -H 'Content-Type: application/json' -d "$BODY" -w $'\n%{http_code}')
+    echo "$(date -u +%T) CLAIM http=${out##*$'\n'} ${out%$'\n'*}"
+    CLAIM=$(echo "${out%$'\n'*}" | jq -r '.id // empty'); SENT=1
+  fi
+  [ -n "$asof" ] && PREV=$asof
+  if [ -n "$CLAIM" ]; then
+    c=$(api "$B/v1/claims/$CLAIM" | jq -c 'if .id then {status, createdAt, updatedAt, failureReason} else . end')
+    [ "$c" != "$LC" ] && echo "$(date -u +%T) CLM $c"; LC=$c
+  fi
+  sleep 1
+done
+20:10:17 BAL {"error":{"code":"RATE_LIMITED","message":"Too many requests","retryAfterMs":1749}}
+20:10:19 BAL {"error":{"code":"RATE_LIMITED","message":"Too many requests","retryAfterMs":454}}
+20:10:20 BAL 
+20:10:22 BAL {"error":{"code":"SERVER","message":"Service temporarily unavailable"}}
+20:10:23 BAL 
+20:10:30 BAL {"error":{"code":"RATE_LIMITED","message":"Too many requests","retryAfterMs":87}}
+20:10:32 BAL {"error":{"code":"RATE_LIMITED","message":"Too many requests","retryAfterMs":9}}
+20:10:33 BAL 
+20:10:35 BAL {"error":{"code":"SERVER","message":"Service temporarily unavailable"}}
+20:10:37 BAL 
+20:10:48 BAL {"error":{"code":"RATE_LIMITED","message":"Too many requests","retryAfterMs":477}}
+20:10:50 BAL 
+^C%                                                                                                                                                            
+george@MacBook-Pro-koristuvac cashmine-test-task % api -i -X POST "$B/v1/claims" -H "Idempotency-Key: $K" -H 'Content-Type: application/json' -d "$BODY" | grep -iE '^(HTTP|idempotent-replayed)'
+HTTP/2 400 
+george@MacBook-Pro-koristuvac cashmine-test-task %
+</pasted_content id="321e">
+
+ "
+
+---
+
+yes, i skipped 2 step
+
+---
+
+"
+
+<pasted_content id="321e">
+george@MacBook-Pro-koristuvac cashmine-test-task % ASSET=XXX; AMOUNT=0.00; DEST=dest_xxx
+george@MacBook-Pro-koristuvac cashmine-test-task % api -i -X POST "$B/v1/claims" -H "Idempotency-Key: $K" -H 'Content-Type: application/json' -d "$BODY" | grep -iE '^(HTTP|idempotent-replayed)'
+HTTP/2 400 
+george@MacBook-Pro-koristuvac cashmine-test-task % K=$(uuidgen); CLAIM=""; LB=""; LC=""; PREV=""; SENT=0
+BODY="{\"asset\":\"$ASSET\",\"amount\":\"$AMOUNT\",\"destinationId\":\"$DEST\"}"
+snap() { api "$B/v1/balances" | jq -c --arg a "$ASSET" 'if .items then {asOf, available: (.items[]|select(.asset==$a)|.available), claiming: (.items[]|select(.asset==$a)|.claiming)} else . end'; }
+for i in $(seq 1 70); do
+  b=$(snap); asof=$(echo "$b" | jq -r '.asOf // empty')
+  [ "$b" != "$LB" ] && echo "$(date -u +%T) BAL $b"; LB=$b
+  if [ "$SENT" = 0 ] && [ -n "$PREV" ] && [ -n "$asof" ] && [ "$asof" != "$PREV" ]; then
+    sleep 12
+    out=$(api -X POST "$B/v1/claims" -H "Idempotency-Key: $K" -H 'Content-Type: application/json' -d "$BODY" -w $'\n%{http_code}')
+    echo "$(date -u +%T) CLAIM http=${out##*$'\n'} ${out%$'\n'*}"
+    CLAIM=$(echo "${out%$'\n'*}" | jq -r '.id // empty'); SENT=1
+  fi
+  [ -n "$asof" ] && PREV=$asof
+  if [ -n "$CLAIM" ]; then
+    c=$(api "$B/v1/claims/$CLAIM" | jq -c 'if .id then {status, createdAt, updatedAt, failureReason} else . end')
+    [ "$c" != "$LC" ] && echo "$(date -u +%T) CLM $c"; LC=$c
+  fi
+  sleep 1
+done
+20:13:06 BAL {"error":{"code":"SERVER","message":"Service temporarily unavailable"}}
+20:13:08 BAL 
+20:13:13 BAL {"error":{"code":"RATE_LIMITED","message":"Too many requests","retryAfterMs":370}}
+20:13:15 BAL 
+20:13:24 BAL {"error":{"code":"SERVER","message":"Service temporarily unavailable"}}
+20:13:25 BAL 
+20:13:29 BAL {"error":{"code":"RATE_LIMITED","message":"Too many requests","retryAfterMs":1099}}
+20:13:31 BAL 
+20:13:35 BAL {"error":{"code":"RATE_LIMITED","message":"Too many requests","retryAfterMs":113}}
+20:13:37 BAL 
+20:13:46 BAL {"error":{"code":"RATE_LIMITED","message":"Too many requests","retryAfterMs":1071}}
+20:13:48 BAL
+</pasted_content id="321e">
+
+ ........ ets"
+```
+
+Response:
+
+- Read both runs. Step 2 was skipped the first time, and the second time its placeholder line (`ASSET=XXX; ...`) was run as written. Either way the asset matched nothing in the balances, so no claim was created: the loop never sent one, and the 400 on the replay came from an empty request body. A template line to fill in was my design mistake.
+- Took new facts from your real output: three assets (USDT, BTC, ETH), the destination is `dest_exchange`, and ETH `available` has 18 decimals (`12.365678901234591676`), which the bigint math handles exactly. The cheapest claim by USD is USDT with an amount of 10 (fee 1.5).
+- Found the rate limit is tight. Polling about once a second (about 0.6 requests per second) returned `RATE_LIMITED` every 8 to 10 requests, with `retryAfterMs` from 9 ms to 1.7 s, plus random 503s (skipped as you asked). For the app this means: poll a pending claim every 4 s at most and balances every 5 s at most during an unreconciled claim, honor `retryAfterMs`, and expect 503 on the claim POST, which is the "outcome unknown" case to replay with the same key.
+- Rewrote the check as one self-contained block with the real values. It refuses an unknown asset, polls every 3.5 s, waits `retryAfterMs` after a 429, skips 503s, and retries the claim POST with the same key. I tested it against a mock that rate-limits and randomly returns 503 (up to 40%). It has not run against the real API.
+- Saved the findings and the corrected block in `ai-logs/balance-after-claim.md`. Your message ended with "........ ets"; I could not tell what it meant.
+- `npx tsc --noEmit` exit 0; I ran no git commands.
+
+Files changed: `ai-logs/balance-after-claim.md`, `ai-logs/session-log.md`
+
+Suggested commit: `docs: record claim check findings and rate limit`

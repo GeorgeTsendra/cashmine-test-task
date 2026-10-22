@@ -8,6 +8,8 @@ export const colors = {
   primaryText: '#FFFFFF',
   danger: '#C62828',
   dangerBackground: '#FDECEA',
+  warning: '#8A5A00',
+  warningBackground: '#FFF4D6',
 } as const;
 
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;

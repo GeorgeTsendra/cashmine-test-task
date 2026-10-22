@@ -1,34 +1,38 @@
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { useToken } from '@/features/auth/TokenProvider';
+import { BalancesView } from '@/features/balances/BalancesView';
 import { colors, fontSize, spacing } from '@/theme';
 
-// Placeholder until the balances screen lands.
 export default function HomeScreen() {
-  const { token, clearToken } = useToken();
+  const { clearToken } = useToken();
 
   return (
     <Screen>
-      <Text accessibilityRole="header" style={styles.title}>
-        Payback
-      </Text>
-      <Text style={styles.body}>Token saved (ends with {token?.slice(-4)}).</Text>
-      <Button label="Change token" variant="secondary" onPress={() => void clearToken()} />
+      <View style={styles.header}>
+        <Text accessibilityRole="header" style={styles.title}>
+          Payback
+        </Text>
+        <Button label="Change token" variant="link" onPress={() => void clearToken()} />
+      </View>
+      <BalancesView />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingTop: spacing.lg,
+  },
   title: {
-    paddingTop: spacing.xxl,
     fontSize: fontSize.xxl,
     fontWeight: '700',
     color: colors.text,
-  },
-  body: {
-    fontSize: fontSize.md,
-    color: colors.textMuted,
   },
 });
