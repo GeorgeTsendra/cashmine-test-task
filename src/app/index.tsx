@@ -1,17 +1,41 @@
-import { Text, View, StyleSheet } from "react-native";
+import { StyleSheet, Text, View } from 'react-native';
 
-export default function Index() {
+import { Button, ButtonVariant } from '@/components/Button';
+import { Screen } from '@/components/Screen';
+import { useToken } from '@/features/auth/TokenProvider';
+import { BalancesView } from '@/features/balances/BalancesView';
+import { PendingAttemptBanner } from '@/features/claim/PendingAttemptBanner';
+import { strings } from '@/strings';
+import { colors, fontSize, spacing } from '@/theme';
+
+export default function HomeScreen() {
+  const { clearToken } = useToken();
+
   return (
-    <View style={styles.container}>
-      <Text>Edit src/app/index.tsx to edit this screen.</Text>
-    </View>
+    <Screen>
+      <View style={styles.header}>
+        <Text accessibilityRole="header" style={styles.title}>
+          {strings.home.title}
+        </Text>
+        <Button label={strings.home.changeToken} variant={ButtonVariant.Link} onPress={() => void clearToken()} />
+      </View>
+      <PendingAttemptBanner />
+      <BalancesView />
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingTop: spacing.lg,
+  },
+  title: {
+    fontSize: fontSize.xxl,
+    fontWeight: '700',
+    color: colors.text,
   },
 });
