@@ -841,3 +841,41 @@ Response:
 Files changed: `README.md`, `ai-logs/session-log.md`
 
 Suggested commit: `docs: add live link to README`
+
+## 22:48 — Can the Activity screen be added in the last minutes?
+
+Prompt:
+
+```text
+can you do this in 15 minutes? "Show a paginated history of accruals, reversals and claims."
+5
+5 ,inutes
+```
+
+Response:
+
+- Read the question as whether the Activity screen can be added in the minutes left (first 15, then corrected to 5). The answer is no, not safely. A minimal version (a cursor-paginated list with a Load more button and a link from Home) is about 8 to 10 minutes of work including a mock-API check in the browser, so it does not fit in 5.
+- Recommended against doing it at all. With 14 minutes to the 21:00 UTC deadline it would still need a redeploy, a commit, a push and the email. The activity response has open `// TODO: verify` fields and has never been seen from the real API, and a broken screen in the live link would cost more than a missing one. The brief marks Activity as "if time allows" and prefers fewer things done correctly. It is already listed under "Next steps" in `NOTES.md` and under "What does not work yet" in `README.md`.
+- Offered the alternative: on a go, build it with a hard stop at 20:54, and deploy and push only if everything is green.
+- Wrote no code. `npx tsc --noEmit` exit 0; I ran no git commands.
+
+Files changed: `ai-logs/session-log.md`
+
+Suggested commit: none (include it with your last docs commit)
+
+## 22:48 — Submission: Activity skipped
+
+Prompt:
+
+```text
+Skip Activity. I'm committing, pushing and sending the email now.
+```
+
+Response:
+
+- Skipped the Activity screen, as decided. It stays under "Next steps" in `NOTES.md` and "What does not work yet" in `README.md`.
+- Wrote no code and ran no git commands. The live build, the README link and the notes are the submission.
+
+Files changed: `ai-logs/session-log.md`
+
+Suggested commit: none
